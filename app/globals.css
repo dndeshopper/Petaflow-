@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 97.6%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 0 0% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 20%;
+    --muted: 0 0% 95%;
+    --muted-foreground: 0 0% 48%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 10%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 0 0% 10%;
+    --radius: 0.75rem;
+    --font-serif: "Georgia", "Times New Roman", serif;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply antialiased overflow-x-hidden;
+    background: #f4f3f1;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #e2e1de;
+    border-radius: 8px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+  }
+}
+
+@layer utilities {
+  .timeline-stem {
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      #e8e8e8 2%,
+      #e8e8e8 98%,
+      transparent 100%
+    );
+  }
+}

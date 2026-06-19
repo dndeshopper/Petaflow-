@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PetalFlow</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      width: 300px;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #FAFAF8;
+      color: #1A1A1A;
+      padding: 20px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .logo-icon {
+      width: 28px;
+      height: 28px;
+      background: rgba(107, 123, 110, 0.1);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    h1 { font-size: 15px; font-weight: 600; }
+    .tagline { font-size: 11px; color: #8B8B8B; }
+    p { font-size: 12px; color: #6B6B6B; line-height: 1.5; margin-bottom: 16px; }
+    label { font-size: 11px; color: #8B8B8B; display: block; margin-bottom: 4px; }
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #E8E8E8;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 12px;
+      background: white;
+    }
+    button {
+      width: 100%;
+      padding: 8px;
+      background: #1A1A1A;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    button:hover { opacity: 0.9; }
+    .hint { font-size: 10px; color: #B0B0B0; margin-top: 12px; text-align: center; }
+    .status { font-size: 11px; color: #6B7B6E; margin-top: 8px; text-align: center; min-height: 16px; }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <div class="logo-icon">🌸</div>
+    <div>
+      <h1>PetalFlow</h1>
+      <div class="tagline">Save now. Watch later.</div>
+    </div>
+  </div>
+  <p>Right-click any page or link and select <strong>Add to PetalFlow</strong>.</p>
+  <label for="apiUrl">API URL</label>
+  <input type="url" id="apiUrl" placeholder="http://localhost:3000" />
+  <label for="apiKey">API Key (optional)</label>
+  <input type="password" id="apiKey" placeholder="INTERNAL_API_KEY" autocomplete="off" />
+  <label for="userId">User ID (optional)</label>
+  <input type="text" id="userId" placeholder="Supabase user UUID" />
+  <button id="save" type="button">Save Settings</button>
+  <p class="status" id="status" aria-live="polite"></p>
+  <p class="hint">Matches INTERNAL_API_KEY and PETALFLOW_DEFAULT_USER_ID in your app .env</p>
+  <script src="popup.js"></script>
+</body>
+</html>
