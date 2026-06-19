@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { design, getThemeStyle } from "@/lib/design-tokens";
-import { getPlatformConfig } from "@/lib/platforms";
+import { getPlatformConfig, resolvePetalPlatform } from "@/lib/platforms";
 import { cn, formatPetalTime } from "@/lib/utils";
 import { NoteIcon } from "@/components/ui/design-icons";
 import type { Petal } from "@/lib/types";
@@ -83,6 +83,7 @@ function PlatformBadge({ platform }: { platform: Petal["platform"] }) {
 }
 
 function PlatformThumbnailFallback({ petal }: { petal: Petal }) {
+  const platformKey = resolvePetalPlatform(petal);
   const gradients: Record<string, string> = {
     youtube: "linear-gradient(135deg,#2a2540,#4a3d6b)",
     instagram: "linear-gradient(135deg,#d8cdbc,#bcae98)",
@@ -94,8 +95,8 @@ function PlatformThumbnailFallback({ petal }: { petal: Petal }) {
     facebook: "linear-gradient(135deg,#1a3a6b,#1877F2)",
   };
 
-  const bg = gradients[petal.platform] ?? "#e9e6e1";
-  const config = getPlatformConfig(petal.platform);
+  const bg = gradients[platformKey] ?? "#e9e6e1";
+  const config = getPlatformConfig(platformKey);
 
   return (
     <div
@@ -132,7 +133,7 @@ function Thumbnail({ petal }: { petal: Petal }) {
 }
 
 export function PetalCard({ petal, maxWidth = 340, className }: PetalCardProps) {
-  const platform = getPlatformConfig(petal.platform);
+  const platform = getPlatformConfig(resolvePetalPlatform(petal));
   const theme = getThemeStyle(petal.theme);
   const time = formatPetalTime(petal.created_at);
   const isTextOnly = petal.platform === "x" && !petal.preview_url;
@@ -152,7 +153,7 @@ export function PetalCard({ petal, maxWidth = 340, className }: PetalCardProps) 
       }}
     >
       <div className="mb-[13px] flex items-center gap-[9px]">
-        <PlatformBadge platform={petal.platform} />
+        <PlatformBadge platform={resolvePetalPlatform(petal)} />
         <span className="text-[13.5px] font-semibold" style={{ color: design.colors.textSecondary }}>
           {platformLabel}
         </span>

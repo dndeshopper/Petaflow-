@@ -1,6 +1,7 @@
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { searchDemoPetals } from "@/lib/demo-data";
 import { getSupabaseClients, type DataContext } from "@/lib/data";
+import { resolvePetalPlatform } from "@/lib/platforms";
 import type { Petal } from "@/lib/types";
 import type { SearchOptions, SearchResponse } from "./types";
 import { SEARCH_PAGE_SIZE } from "./types";
@@ -68,7 +69,10 @@ export async function searchPetals(
 
   if (error) throw new Error(error.message);
 
-  const petals = (data ?? []) as Petal[];
+  const petals = ((data ?? []) as Petal[]).map((petal) => {
+    const platform = resolvePetalPlatform(petal);
+    return platform === petal.platform ? petal : { ...petal, platform };
+  });
   const total = count ?? petals.length;
 
   return {

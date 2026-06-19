@@ -22,7 +22,7 @@ import type {
   GardenTopic,
   UserProfile,
 } from "@/lib/types";
-import { detectPlatform } from "@/lib/platforms";
+import { detectPlatform, resolvePetalPlatform } from "@/lib/platforms";
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
 export interface DataContext {
@@ -92,7 +92,30 @@ export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
-  return data ?? [];
+
+  const petals = (data ?? []).map((petal) => {
+    const platform = resolvePetalPlatform(petal);
+    return platform === petal.platform ? petal : { ...petal, platform };
+  });
+
+  const fixes = petals.filter(
+    (petal, index) => petal.platform !== (data?.[index]?.platform ?? petal.platform)
+  );
+
+  if (fixes.length > 0) {
+    void Promise.all(
+      fixes.map((petal) =>
+        supabase
+          .from("petals")
+          .update({ platform: petal.platform })
+          .eq("id", petal.id)
+      )
+    ).catch((err) => {
+      console.warn("[getPetals] Platform backfill failed:", err);
+    });
+  }
+
+  return petals;
 }
 
 export async function createPetal(

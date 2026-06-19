@@ -7,7 +7,7 @@ import type {
   TodayStats,
   UserProfile,
 } from "@/lib/types";
-import { getPlatformConfig } from "@/lib/platforms";
+import { getPlatformConfig, resolvePetalPlatform } from "@/lib/platforms";
 
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
@@ -143,11 +143,14 @@ function resolveThumbImageUrl(petal: Petal): string | null {
 }
 
 function thumbBgFor(petal: Petal): string {
-  return PLATFORM_EXPORT[petal.platform]?.thumb ?? PLATFORM_EXPORT.website.thumb;
+  const platform = resolvePetalPlatform(petal);
+  return PLATFORM_EXPORT[platform]?.thumb ?? PLATFORM_EXPORT.website.thumb;
 }
 
 function thumbLabel(petal: Petal, hasImage: boolean): string {
   if (hasImage) return "";
+  const platform = resolvePetalPlatform(petal);
+  if (platform !== "website") return "";
   const words = petal.title.split(/\s+/).slice(0, 2);
   return words.map((w) => w.slice(0, 4).toUpperCase()).join(" ");
 }
@@ -185,7 +188,8 @@ export interface ExportTimelineFilter {
 }
 
 export function petalToTimelineItem(petal: Petal): ExportTimelineItem {
-  const plat = PLATFORM_EXPORT[petal.platform] ?? PLATFORM_EXPORT.website;
+  const platform = resolvePetalPlatform(petal);
+  const plat = PLATFORM_EXPORT[platform] ?? PLATFORM_EXPORT.website;
   const theme = themeStyle(petal.theme);
   const thumbImageUrl = resolveThumbImageUrl(petal);
   return {

@@ -101,7 +101,7 @@ export const PLATFORMS: Record<Platform, PlatformConfig> = {
     color: "#1877F2",
     bgColor: "#E7F3FF",
     icon: FacebookIcon as unknown as LucideIcon,
-    domains: ["facebook.com", "fb.com", "fb.watch"],
+    domains: ["facebook.com", "fb.com", "fb.watch", "fb.me"],
   },
   website: {
     id: "website",
@@ -115,9 +115,15 @@ export const PLATFORMS: Record<Platform, PlatformConfig> = {
 
 export function detectPlatform(url: string): Platform {
   try {
-    const hostname = new URL(url).hostname.replace("www.", "");
+    const hostname = new URL(url).hostname.replace(/^www\./i, "").toLowerCase();
+
     for (const [platform, config] of Object.entries(PLATFORMS)) {
-      if (config.domains.some((d) => hostname.includes(d))) {
+      if (platform === "website") continue;
+      if (
+        config.domains.some(
+          (d) => hostname === d || hostname.endsWith(`.${d}`)
+        )
+      ) {
         return platform as Platform;
       }
     }
@@ -125,6 +131,14 @@ export function detectPlatform(url: string): Platform {
     // invalid URL
   }
   return "website";
+}
+
+export function resolvePetalPlatform(
+  petal: Pick<import("./types").Petal, "url" | "platform">
+): Platform {
+  const fromUrl = detectPlatform(petal.url);
+  if (fromUrl !== "website") return fromUrl;
+  return petal.platform;
 }
 
 export function getPlatformConfig(platform: Platform): PlatformConfig {
