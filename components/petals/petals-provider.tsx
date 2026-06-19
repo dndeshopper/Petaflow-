@@ -12,6 +12,7 @@ import type { CreatePetalInput, Petal } from "@/lib/types";
 import {
   createOptimisticPetal,
   createPetalRequest,
+  deletePetalRequest,
   fetchPetals,
 } from "@/lib/petals/client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -31,6 +32,7 @@ interface PetalsContextValue {
   error: string | null;
   newTodayCount: number;
   addPetal: (input: CreatePetalInput) => Promise<Petal>;
+  deletePetal: (petalId: string) => Promise<void>;
   refreshPetals: () => Promise<void>;
 }
 
@@ -104,6 +106,30 @@ export function PetalsProvider({
       }
     },
     [userId, inbox, refreshPetals]
+  );
+
+  const deletePetal = useCallback(
+    async (petalId: string): Promise<void> => {
+      let removed: Petal | undefined;
+      setPetals((prev) => {
+        removed = prev.find((p) => p.id === petalId);
+        return prev.filter((p) => p.id !== petalId);
+      });
+
+      try {
+        await deletePetalRequest(petalId);
+        if (removed?.status === "inbox") {
+          inbox?.decrementCount();
+        }
+        notifyPetalsChanged();
+      } catch (err) {
+        if (removed) {
+          setPetals((prev) => [removed!, ...prev]);
+        }
+        throw err;
+      }
+    },
+    [inbox]
   );
 
   useEffect(() => {
@@ -216,9 +242,10 @@ export function PetalsProvider({
       error,
       newTodayCount: countNewToday(petals),
       addPetal,
+      deletePetal,
       refreshPetals,
     }),
-    [petals, isLoading, isCreating, error, addPetal, refreshPetals]
+    [petals, isLoading, isCreating, error, addPetal, deletePetal, refreshPetals]
   );
 
   return (

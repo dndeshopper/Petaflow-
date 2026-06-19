@@ -61,3 +61,16 @@ export async function createPetalRequest(
   const data = await res.json();
   return data.petal;
 }
+
+export async function deletePetalRequest(petalId: string): Promise<void> {
+  const res = await fetch(`/api/petals/${petalId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "archive" }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? "Failed to delete petal");
+  }
+}

@@ -8,6 +8,7 @@ import { SearchBell } from "@/components/export-ui/Header";
 import { usePetals } from "@/components/petals/petals-provider";
 import { AddPetalDialog } from "@/components/petals/add-petal-dialog";
 import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
+import { PetalDeleteButton } from "@/components/export-ui/PetalDeleteButton";
 import {
   getTodayPetals,
   greetingForUser,
@@ -16,13 +17,6 @@ import {
 } from "@/lib/export-ui/adapters";
 import { getDailyQuote } from "@/lib/demo-data";
 import type { TodayStats, UserProfile } from "@/lib/types";
-
-const Bookmark = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c4c2be" strokeWidth="1.8" style={{ flex: "none", marginTop: 2 }}>
-    <rect x="5" y="3" width="14" height="18" rx="2" />
-    <path d="M9 8h6M9 12h6M9 16h3" />
-  </svg>
-);
 
 function Row({ side, time, children }: { side: "left" | "right"; time?: string; children: React.ReactNode }) {
   return (
@@ -144,27 +138,29 @@ export function ExportDashboard({ user, stats }: ExportDashboardProps) {
                 const showThumb = item.thumbImageUrl || item.thumbLabel;
                 return (
                   <Row key={petal.id} side={side as "left" | "right"} time={item.time}>
-                    <PetalCardLink url={item.url}>
-                      <CardShell w={w}>
-                        <CardHead name={item.platform} time={item.time} icon={<PlatformIcon platGlyph={item.platGlyph} platBg={item.platBg} />} />
-                        <div style={s("display:flex; gap:13px; align-items:flex-start;")}>
-                          {showThumb && (
-                            <PetalThumb
-                              thumbBg={item.thumbBg}
-                              thumbImageUrl={item.thumbImageUrl}
-                              thumbLabel={item.thumbLabel}
-                              width={96}
-                              height={62}
-                            />
-                          )}
-                          <div style={s("flex:1; min-width:0;")}>
-                            <div style={s("font-size:15px; font-weight:600; line-height:1.3;")}>{item.title}</div>
-                            <span style={s(`display:inline-block; margin-top:10px; font-size:12px; color:${item.tagColor}; background:${item.tagBg}; border-radius:7px; padding:4px 9px; font-weight:500;`)}>{item.tag}</span>
+                    <CardShell w={w}>
+                      <CardHead name={item.platform} time={item.time} icon={<PlatformIcon platGlyph={item.platGlyph} platBg={item.platBg} />} />
+                      <div style={s("display:flex; gap:13px; align-items:flex-start;")}>
+                        <PetalCardLink url={item.url} style={{ flex: 1, minWidth: 0 }}>
+                          <div style={s("display:flex; gap:13px; align-items:flex-start;")}>
+                            {showThumb && (
+                              <PetalThumb
+                                thumbBg={item.thumbBg}
+                                thumbImageUrl={item.thumbImageUrl}
+                                thumbLabel={item.thumbLabel}
+                                width={96}
+                                height={62}
+                              />
+                            )}
+                            <div style={s("flex:1; min-width:0;")}>
+                              <div style={s("font-size:15px; font-weight:600; line-height:1.3;")}>{item.title}</div>
+                              <span style={s(`display:inline-block; margin-top:10px; font-size:12px; color:${item.tagColor}; background:${item.tagBg}; border-radius:7px; padding:4px 9px; font-weight:500;`)}>{item.tag}</span>
+                            </div>
                           </div>
-                          <Bookmark />
-                        </div>
-                      </CardShell>
-                    </PetalCardLink>
+                        </PetalCardLink>
+                        <PetalDeleteButton petalId={petal.id} title={item.title} />
+                      </div>
+                    </CardShell>
                   </Row>
                 );
               })}
