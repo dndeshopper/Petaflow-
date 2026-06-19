@@ -21,6 +21,7 @@ const PLATFORM_GRADIENTS: Record<
   x: { from: "#141414", to: "#2a2a2a", badge: "#000000", badgeText: "#ffffff" },
   linkedin: { from: "#1a2a3a", to: "#0a3d6b", badge: "#0a66c2", badgeText: "#ffffff" },
   medium: { from: "#1a1a1a", to: "#2d2d2d", badge: "#000000", badgeText: "#ffffff" },
+  facebook: { from: "#1a3a6b", to: "#1877F2", badge: "#1877F2", badgeText: "#ffffff" },
   website: { from: "#2a3540", to: "#4a5a6b", badge: "#6b7b6e", badgeText: "#ffffff" },
 };
 

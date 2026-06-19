@@ -18,6 +18,7 @@ const processSchema = z.object({
       "x",
       "linkedin",
       "medium",
+      "facebook",
       "website",
     ])
     .optional(),

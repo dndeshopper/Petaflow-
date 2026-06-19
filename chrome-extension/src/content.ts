@@ -38,6 +38,15 @@ function getPageTitle(): string {
     return getYouTubeTitle() || document.title.replace(/\s*-\s*YouTube\s*$/i, "").trim() || window.location.href;
   }
 
+  if (host.includes("facebook.com") || host === "fb.com" || host.includes("fb.watch")) {
+    const ogTitle = document.querySelector("meta[property='og:title']");
+    if (ogTitle instanceof HTMLMetaElement && ogTitle.content) {
+      return ogTitle.content.trim();
+    }
+    const cleaned = document.title.replace(/\s*\|\s*Facebook\s*$/i, "").trim();
+    if (cleaned && cleaned.toLowerCase() !== "facebook") return cleaned;
+  }
+
   const ogTitle = document.querySelector("meta[property='og:title']");
   if (ogTitle instanceof HTMLMetaElement && ogTitle.content) {
     return ogTitle.content.trim();

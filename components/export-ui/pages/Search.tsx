@@ -12,6 +12,7 @@ const PLATFORM_CHIPS: { label: string; platform?: Platform; dot: string | null }
   { label: "All platforms", dot: null },
   { label: "YouTube", platform: "youtube", dot: "#ff0000" },
   { label: "Instagram", platform: "instagram", dot: "#E4405F" },
+  { label: "Facebook", platform: "facebook", dot: "#1877F2" },
   { label: "X", platform: "x", dot: "#000" },
 ];
 

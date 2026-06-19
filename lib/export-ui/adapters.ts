@@ -45,6 +45,12 @@ const PLATFORM_EXPORT: Record<
     platBg: "#000",
     thumb: "linear-gradient(135deg,#c9cdc2,#9ba38c)",
   },
+  facebook: {
+    platform: "Facebook",
+    platGlyph: "f",
+    platBg: "#1877F2",
+    thumb: "linear-gradient(135deg,#1a3a6b,#1877F2)",
+  },
   website: {
     platform: "Website",
     platGlyph: "◍",

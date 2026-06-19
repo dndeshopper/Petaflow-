@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS public.petals (
   title TEXT NOT NULL DEFAULT '',
   note TEXT,
   platform TEXT NOT NULL DEFAULT 'website'
-    CHECK (platform IN ('youtube', 'instagram', 'tiktok', 'x', 'linkedin', 'medium', 'website')),
+    CHECK (platform IN ('youtube', 'instagram', 'tiktok', 'x', 'linkedin', 'medium', 'facebook', 'website')),
   preview_url TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   viewed BOOLEAN NOT NULL DEFAULT false,

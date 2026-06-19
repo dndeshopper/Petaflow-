@@ -5,6 +5,7 @@ export type Platform =
   | "x"
   | "linkedin"
   | "medium"
+  | "facebook"
   | "website";
 
 export type PreviewStatus =

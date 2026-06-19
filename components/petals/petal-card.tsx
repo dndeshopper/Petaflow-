@@ -51,6 +51,13 @@ function PlatformBadge({ platform }: { platform: Petal["platform"] }) {
       </span>
     );
   }
+  if (platform === "facebook") {
+    return (
+      <span className="flex h-[22px] w-[22px] items-center justify-center rounded-md bg-[#1877F2] font-serif text-[15px] font-bold text-white">
+        f
+      </span>
+    );
+  }
   if (platform === "tiktok") {
     return (
       <span className="flex h-[22px] w-[22px] items-center justify-center rounded-md bg-black text-xs font-bold text-white">
@@ -84,6 +91,7 @@ function PlatformThumbnailFallback({ petal }: { petal: Petal }) {
     website: "linear-gradient(135deg,#cdd4dc,#a7b2bd)",
     x: "linear-gradient(135deg,#1a1a1a,#2d2d2d)",
     linkedin: "linear-gradient(135deg,#1a2a3a,#0a3d6b)",
+    facebook: "linear-gradient(135deg,#1a3a6b,#1877F2)",
   };
 
   const bg = gradients[petal.platform] ?? "#e9e6e1";

@@ -69,6 +69,11 @@ function PlatformIcon({ platGlyph, platBg }: { platGlyph: string; platBg: string
       <span style={s(`width:22px; height:22px; border-radius:6px; background:${platBg}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:13px; font-weight:700; font-family:Georgia,serif;`)}>M</span>
     );
   }
+  if (platGlyph === "f") {
+    return (
+      <span style={s(`width:22px; height:22px; border-radius:6px; background:${platBg}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px; font-weight:700; font-family:Georgia,serif;`)}>f</span>
+    );
+  }
   if (platGlyph === "◍") {
     return (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6f8fb5" strokeWidth="1.7">
