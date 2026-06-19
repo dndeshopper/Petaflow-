@@ -1,13 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { s } from "@/lib/export-style";
 import { PageHeader } from "@/components/export-ui/Header";
 import { petalToInboxItem } from "@/lib/export-ui/adapters";
+import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
 import { performInboxActionRequest } from "@/lib/inbox/client";
 import { notifyPetalsChanged } from "@/lib/sync-events";
 import { useInbox } from "@/components/inbox/inbox-provider";
-import type { Petal } from "@/lib/types";
+import { usePetals } from "@/components/petals/petals-provider";
 
 const Flower = () => (
   <svg width="18" height="18" viewBox="0 0 40 40">
@@ -19,25 +20,30 @@ const Flower = () => (
   </svg>
 );
 
-interface ExportInboxProps {
-  initialPetals: Petal[];
-}
-
-export function ExportInbox({ initialPetals }: ExportInboxProps) {
+export function ExportInbox() {
   const { decrementCount, refreshCount } = useInbox();
-  const [items, setItems] = useState(() => initialPetals.map(petalToInboxItem));
+  const { petals } = usePetals();
+  const inboxPetals = useMemo(
+    () => petals.filter((p) => p.status === "inbox"),
+    [petals]
+  );
+  const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  useEffect(() => {
-    setItems(initialPetals.map(petalToInboxItem));
-  }, [initialPetals]);
+  const items = useMemo(
+    () =>
+      inboxPetals
+        .filter((p) => !removedIds.has(p.id))
+        .map(petalToInboxItem),
+    [inboxPetals, removedIds]
+  );
 
   const runAction = useCallback(
     async (petalId: string, action: "mark_viewed" | "archive") => {
       setBusyId(petalId);
       try {
         await performInboxActionRequest(petalId, { action });
-        setItems((prev) => prev.filter((i) => i.id !== petalId));
+        setRemovedIds((prev) => new Set(prev).add(petalId));
         decrementCount();
         await refreshCount();
         notifyPetalsChanged();
@@ -51,8 +57,8 @@ export function ExportInbox({ initialPetals }: ExportInboxProps) {
   async function sortAll() {
     for (const item of [...items]) {
       await performInboxActionRequest(item.id, { action: "mark_viewed" });
+      setRemovedIds((prev) => new Set(prev).add(item.id));
     }
-    setItems([]);
     await refreshCount();
     notifyPetalsChanged();
   }
@@ -84,23 +90,33 @@ export function ExportInbox({ initialPetals }: ExportInboxProps) {
           {items.map((it) => (
             <div key={it.id} style={s("display:flex; align-items:center; gap:16px; background:#fff; border:1px solid #ededeb; border-radius:16px; box-shadow:0 2px 9px rgba(0,0,0,0.03); padding:16px 18px;")}>
               <span style={s(`width:9px; height:9px; border-radius:50%; background:${it.unreadColor}; flex:none;`)} />
-              <div style={s(`width:96px; height:60px; border-radius:9px; flex:none; background:${it.thumb}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:800; letter-spacing:0.4px;`)}>{it.thumbLabel}</div>
-              <div style={s("flex:1; min-width:0;")}>
-                <div style={s("display:flex; align-items:center; gap:8px; margin-bottom:6px;")}>
-                  <span style={s(`width:18px; height:18px; border-radius:5px; background:${it.platBg}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; flex:none;`)}>{it.platGlyph}</span>
-                  <span style={s("font-size:12.5px; font-weight:600; color:#6f6d69; white-space:nowrap;")}>{it.platform}</span>
-                  <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
-                  <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{it.time}</span>
+              <PetalCardLink url={it.url} style={{ flex: 1, minWidth: 0 }}>
+                <div style={s("display:flex; align-items:center; gap:16px;")}>
+                  <PetalThumb
+                    thumbBg={it.thumbBg}
+                    thumbImageUrl={it.thumbImageUrl}
+                    thumbLabel={it.thumbLabel}
+                    width={96}
+                    height={60}
+                  />
+                  <div style={s("flex:1; min-width:0;")}>
+                    <div style={s("display:flex; align-items:center; gap:8px; margin-bottom:6px;")}>
+                      <span style={s(`width:18px; height:18px; border-radius:5px; background:${it.platBg}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; flex:none;`)}>{it.platGlyph}</span>
+                      <span style={s("font-size:12.5px; font-weight:600; color:#6f6d69; white-space:nowrap;")}>{it.platform}</span>
+                      <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
+                      <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{it.time}</span>
+                    </div>
+                    <div style={s("font-size:15px; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;")}>{it.title}</div>
+                    <div style={s("display:flex; align-items:center; gap:7px; margin-top:9px;")}>
+                      <span style={s("font-size:12px; color:#a7a5a1;")}>Suggested:</span>
+                      <span style={s(`display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:${it.tagColor}; background:${it.tagBg}; border-radius:7px; padding:3px 9px;`)}>
+                        <span style={s(`width:6px; height:6px; border-radius:50%; background:${it.tagColor};`)} />
+                        {it.suggestion}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div style={s("font-size:15px; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;")}>{it.title}</div>
-                <div style={s("display:flex; align-items:center; gap:7px; margin-top:9px;")}>
-                  <span style={s("font-size:12px; color:#a7a5a1;")}>Suggested:</span>
-                  <span style={s(`display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:${it.tagColor}; background:${it.tagBg}; border-radius:7px; padding:3px 9px;`)}>
-                    <span style={s(`width:6px; height:6px; border-radius:50%; background:${it.tagColor};`)} />
-                    {it.suggestion}
-                  </span>
-                </div>
-              </div>
+              </PetalCardLink>
               <div style={s("display:flex; align-items:center; gap:8px; flex:none;")}>
                 <button
                   type="button"

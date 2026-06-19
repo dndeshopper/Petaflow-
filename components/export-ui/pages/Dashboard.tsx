@@ -7,6 +7,7 @@ import { s } from "@/lib/export-style";
 import { SearchBell } from "@/components/export-ui/Header";
 import { usePetals } from "@/components/petals/petals-provider";
 import { AddPetalDialog } from "@/components/petals/add-petal-dialog";
+import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
 import {
   getTodayPetals,
   greetingForUser,
@@ -135,24 +136,30 @@ export function ExportDashboard({ user, stats }: ExportDashboardProps) {
                 const item = petalToTimelineItem(petal);
                 const side = index % 2 === 0 ? "left" : "right";
                 const w = side === "left" ? 330 : 340;
-                const hasThumb = item.thumb.startsWith("url(") || item.thumbLabel;
+                const showThumb = item.thumbImageUrl || item.thumbLabel;
                 return (
                   <Row key={petal.id} side={side as "left" | "right"} time={item.time}>
-                    <CardShell w={w}>
-                      <CardHead name={item.platform} time={item.time} icon={<PlatformIcon platGlyph={item.platGlyph} platBg={item.platBg} />} />
-                      <div style={s("display:flex; gap:13px; align-items:flex-start;")}>
-                        {hasThumb && (
-                          <div style={s(`width:96px; height:62px; border-radius:9px; flex:none; background:${item.thumb}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:800; letter-spacing:0.5px;`)}>
-                            {item.thumbLabel}
+                    <PetalCardLink url={item.url}>
+                      <CardShell w={w}>
+                        <CardHead name={item.platform} time={item.time} icon={<PlatformIcon platGlyph={item.platGlyph} platBg={item.platBg} />} />
+                        <div style={s("display:flex; gap:13px; align-items:flex-start;")}>
+                          {showThumb && (
+                            <PetalThumb
+                              thumbBg={item.thumbBg}
+                              thumbImageUrl={item.thumbImageUrl}
+                              thumbLabel={item.thumbLabel}
+                              width={96}
+                              height={62}
+                            />
+                          )}
+                          <div style={s("flex:1; min-width:0;")}>
+                            <div style={s("font-size:15px; font-weight:600; line-height:1.3;")}>{item.title}</div>
+                            <span style={s(`display:inline-block; margin-top:10px; font-size:12px; color:${item.tagColor}; background:${item.tagBg}; border-radius:7px; padding:4px 9px; font-weight:500;`)}>{item.tag}</span>
                           </div>
-                        )}
-                        <div style={s("flex:1; min-width:0;")}>
-                          <div style={s("font-size:15px; font-weight:600; line-height:1.3;")}>{item.title}</div>
-                          <span style={s(`display:inline-block; margin-top:10px; font-size:12px; color:${item.tagColor}; background:${item.tagBg}; border-radius:7px; padding:4px 9px; font-weight:500;`)}>{item.tag}</span>
+                          <Bookmark />
                         </div>
-                        <Bookmark />
-                      </div>
-                    </CardShell>
+                      </CardShell>
+                    </PetalCardLink>
                   </Row>
                 );
               })}

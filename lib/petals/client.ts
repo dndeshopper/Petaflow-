@@ -1,11 +1,14 @@
 import type { CreatePetalInput, Petal } from "@/lib/types";
 import { detectPlatform } from "@/lib/platforms";
+import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
 export function createOptimisticPetal(
   input: CreatePetalInput,
   userId: string
 ): Petal {
   const platform = input.platform ?? detectPlatform(input.url);
+  const youtubeThumb =
+    platform === "youtube" ? getYoutubeThumbnailUrl(input.url) : null;
   let title = input.title;
   if (!title) {
     try {
@@ -22,12 +25,12 @@ export function createOptimisticPetal(
     title,
     note: input.note ?? null,
     platform,
-    preview_url: null,
+    preview_url: youtubeThumb,
     created_at: new Date().toISOString(),
     viewed: false,
     status: "inbox",
     theme: input.theme ?? null,
-    preview_status: "pending",
+    preview_status: youtubeThumb ? "completed" : "pending",
   };
 }
 

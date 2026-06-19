@@ -23,6 +23,7 @@ import type {
   UserProfile,
 } from "@/lib/types";
 import { detectPlatform } from "@/lib/platforms";
+import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
 export interface DataContext {
   userId?: string;
@@ -99,6 +100,8 @@ export async function createPetal(
   ctx?: DataContext
 ): Promise<Petal> {
   const platform = input.platform ?? detectPlatform(input.url);
+  const youtubeThumb =
+    platform === "youtube" ? getYoutubeThumbnailUrl(input.url) : null;
   let title = input.title;
   if (!title) {
     try {
@@ -115,11 +118,11 @@ export async function createPetal(
       title,
       note: input.note ?? null,
       platform,
-      preview_url: null,
+      preview_url: youtubeThumb,
       viewed: false,
       status: "inbox",
       theme: input.theme ?? null,
-      preview_status: "pending",
+      preview_status: youtubeThumb ? "completed" : "pending",
     });
   }
 
@@ -137,7 +140,8 @@ export async function createPetal(
       note: input.note ?? null,
       platform,
       theme: input.theme ?? null,
-      preview_status: "pending",
+      preview_url: youtubeThumb,
+      preview_status: youtubeThumb ? "completed" : "pending",
       viewed: false,
       status: "inbox",
     })

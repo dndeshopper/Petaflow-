@@ -8,6 +8,7 @@ import {
   uploadPreviewScreenshot,
 } from "@/lib/storage/preview-upload";
 import { generateAndStoreFallbackCard } from "./generate-fallback";
+import { getYoutubeThumbnailUrl } from "./youtube";
 
 /**
  * Preview pipeline:
@@ -16,6 +17,9 @@ import { generateAndStoreFallbackCard } from "./generate-fallback";
  * 3. Branded fallback card → stored image (never broken)
  */
 export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
+  const ytThumb =
+    job.platform === "youtube" ? getYoutubeThumbnailUrl(job.url) : null;
+
   const og = await extractOpenGraph(job.url);
   const ogTitle = og.data?.title;
   const ogDescription = og.data?.description;
@@ -24,13 +28,15 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
     title: ogTitle ?? job.title,
   };
 
-  if (og.success && og.data?.image) {
+  const previewImage = og.success && og.data?.image ? og.data.image : ytThumb;
+
+  if (previewImage) {
     return {
       status: "completed",
-      preview_url: og.data.image,
+      preview_url: previewImage,
       title: enrichedJob.title,
       description: ogDescription,
-      source: "opengraph",
+      source: og.data?.image ? "opengraph" : "youtube",
     };
   }
 

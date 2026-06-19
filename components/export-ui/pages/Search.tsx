@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { s } from "@/lib/export-style";
 import { petalToSearchResult } from "@/lib/export-ui/adapters";
+import { PetalThumb } from "@/components/export-ui/PetalCardLink";
+import { PETALS_CHANGED_EVENT } from "@/lib/sync-events";
 import type { Petal, Platform } from "@/lib/types";
 
 const PLATFORM_CHIPS: { label: string; platform?: Platform; dot: string | null }[] = [
@@ -44,6 +46,28 @@ export function ExportSearch() {
       }
     }, 300);
     return () => clearTimeout(timer);
+  }, [query, activePlatform, unreadOnly]);
+
+  useEffect(() => {
+    const onPetalsChanged = () => {
+      const params = new URLSearchParams();
+      if (query.trim()) params.set("q", query.trim());
+      const chip = PLATFORM_CHIPS.find((c) => c.label === activePlatform);
+      if (chip?.platform) params.set("platform", chip.platform);
+      if (unreadOnly) params.set("viewed", "false");
+      params.set("limit", "50");
+
+      void fetch(`/api/search?${params.toString()}`, { cache: "no-store" })
+        .then((res) => res.json())
+        .then((data) => {
+          const petals = (data.petals ?? []) as Petal[];
+          setResults(petals.map(petalToSearchResult));
+        })
+        .catch(() => undefined);
+    };
+
+    window.addEventListener(PETALS_CHANGED_EVENT, onPetalsChanged);
+    return () => window.removeEventListener(PETALS_CHANGED_EVENT, onPetalsChanged);
   }, [query, activePlatform, unreadOnly]);
 
   const chips = useMemo(() => {
@@ -111,11 +135,18 @@ export function ExportSearch() {
           {results.map((r) => (
             <a
               key={r.id}
-              href={r.id}
-              onClick={(e) => e.preventDefault()}
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
               style={s("display:flex; align-items:center; gap:15px; background:#fff; border:1px solid #ededeb; border-radius:14px; box-shadow:0 2px 9px rgba(0,0,0,0.03); padding:14px 16px; cursor:pointer; text-decoration:none; color:inherit;")}
             >
-              <div style={s(`width:88px; height:56px; border-radius:9px; flex:none; background:${r.thumb}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:800; letter-spacing:0.4px;`)}>{r.thumbLabel}</div>
+              <PetalThumb
+                thumbBg={r.thumbBg}
+                thumbImageUrl={r.thumbImageUrl}
+                thumbLabel={r.thumbLabel}
+                width={88}
+                height={56}
+              />
               <div style={s("flex:1; min-width:0;")}>
                 <div style={s("display:flex; align-items:center; gap:8px; margin-bottom:5px;")}>
                   <span style={s(`width:18px; height:18px; border-radius:5px; background:${r.platBg}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; flex:none;`)}>{r.platGlyph}</span>

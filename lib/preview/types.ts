@@ -19,5 +19,5 @@ export interface PreviewResult {
   preview_url: string | null;
   title?: string;
   description?: string;
-  source: "opengraph" | "playwright" | "fallback";
+  source: "opengraph" | "playwright" | "fallback" | "youtube";
 }

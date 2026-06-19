@@ -9,6 +9,8 @@ import type {
 } from "@/lib/types";
 import { getPlatformConfig } from "@/lib/platforms";
 
+import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
+
 const YT = "linear-gradient(135deg,#2a2540,#4a3d6b)";
 const IG = "linear-gradient(135deg,#f9ce5b,#ee583f 45%,#d92e8c 75%,#9b3bc4)";
 const X_BG = "linear-gradient(135deg,#2c2c2e,#444448)";
@@ -128,19 +130,25 @@ function petalRelative(petal: Petal): string {
   return formatDistanceToNow(parseISO(petal.created_at), { addSuffix: true });
 }
 
-function thumbFor(petal: Petal): string {
-  if (petal.preview_url) return `url(${petal.preview_url}) center/cover`;
+function resolveThumbImageUrl(petal: Petal): string | null {
+  if (petal.preview_url) return petal.preview_url;
+  if (petal.platform === "youtube") return getYoutubeThumbnailUrl(petal.url);
+  return null;
+}
+
+function thumbBgFor(petal: Petal): string {
   return PLATFORM_EXPORT[petal.platform]?.thumb ?? PLATFORM_EXPORT.website.thumb;
 }
 
-function thumbLabel(petal: Petal): string {
-  if (petal.preview_url) return "";
+function thumbLabel(petal: Petal, hasImage: boolean): string {
+  if (hasImage) return "";
   const words = petal.title.split(/\s+/).slice(0, 2);
   return words.map((w) => w.slice(0, 4).toUpperCase()).join(" ");
 }
 
 export interface ExportTimelineItem {
   id: string;
+  url: string;
   platform: string;
   platGlyph: string;
   platBg: string;
@@ -150,7 +158,8 @@ export interface ExportTimelineItem {
   tagColor: string;
   tagBg: string;
   accent: string;
-  thumb: string;
+  thumbBg: string;
+  thumbImageUrl: string | null;
   thumbLabel: string;
 }
 
@@ -172,8 +181,10 @@ export interface ExportTimelineFilter {
 export function petalToTimelineItem(petal: Petal): ExportTimelineItem {
   const plat = PLATFORM_EXPORT[petal.platform] ?? PLATFORM_EXPORT.website;
   const theme = themeStyle(petal.theme);
+  const thumbImageUrl = resolveThumbImageUrl(petal);
   return {
     id: petal.id,
+    url: petal.url,
     platform: plat.platform,
     platGlyph: plat.platGlyph,
     platBg: plat.platBg,
@@ -183,8 +194,9 @@ export function petalToTimelineItem(petal: Petal): ExportTimelineItem {
     tagColor: theme.tagColor,
     tagBg: theme.tagBg,
     accent: theme.accent,
-    thumb: thumbFor(petal),
-    thumbLabel: thumbLabel(petal),
+    thumbBg: thumbBgFor(petal),
+    thumbImageUrl,
+    thumbLabel: thumbLabel(petal, Boolean(thumbImageUrl)),
   };
 }
 
@@ -261,6 +273,7 @@ export function getTodayPetals(petals: Petal[]): Petal[] {
 
 export interface ExportSearchResult {
   id: string;
+  url: string;
   platform: string;
   platGlyph: string;
   platBg: string;
@@ -269,7 +282,8 @@ export interface ExportSearchResult {
   tag: string;
   tagColor: string;
   tagBg: string;
-  thumb: string;
+  thumbBg: string;
+  thumbImageUrl: string | null;
   thumbLabel: string;
 }
 
@@ -277,6 +291,7 @@ export function petalToSearchResult(petal: Petal): ExportSearchResult {
   const item = petalToTimelineItem(petal);
   return {
     id: petal.id,
+    url: item.url,
     platform: item.platform,
     platGlyph: item.platGlyph,
     platBg: item.platBg,
@@ -285,7 +300,8 @@ export function petalToSearchResult(petal: Petal): ExportSearchResult {
     tag: item.tag,
     tagColor: item.tagColor,
     tagBg: item.tagBg,
-    thumb: item.thumb,
+    thumbBg: item.thumbBg,
+    thumbImageUrl: item.thumbImageUrl,
     thumbLabel: item.thumbLabel,
   };
 }
@@ -356,6 +372,7 @@ export function collectionsToExport(items: Collection[]): ExportCollection[] {
 
 export interface ExportInboxItem {
   id: string;
+  url: string;
   platform: string;
   platGlyph: string;
   platBg: string;
@@ -365,7 +382,8 @@ export interface ExportInboxItem {
   tagColor: string;
   tagBg: string;
   unreadColor: string;
-  thumb: string;
+  thumbBg: string;
+  thumbImageUrl: string | null;
   thumbLabel: string;
 }
 
@@ -373,6 +391,7 @@ export function petalToInboxItem(petal: Petal): ExportInboxItem {
   const item = petalToTimelineItem(petal);
   return {
     id: petal.id,
+    url: item.url,
     platform: item.platform,
     platGlyph: item.platGlyph,
     platBg: item.platBg,
@@ -382,7 +401,8 @@ export function petalToInboxItem(petal: Petal): ExportInboxItem {
     tagColor: item.tagColor,
     tagBg: item.tagBg,
     unreadColor: petal.viewed ? "#cdc9c3" : "#6c5ce7",
-    thumb: item.thumb,
+    thumbBg: item.thumbBg,
+    thumbImageUrl: item.thumbImageUrl,
     thumbLabel: item.thumbLabel,
   };
 }

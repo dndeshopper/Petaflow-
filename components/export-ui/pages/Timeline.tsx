@@ -6,6 +6,7 @@ import { s } from "@/lib/export-style";
 import { PageHeader, SearchBell } from "@/components/export-ui/Header";
 import { usePetals } from "@/components/petals/petals-provider";
 import { buildTimelineDays, buildTimelineFilters } from "@/lib/export-ui/adapters";
+import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
 
 const Bookmark = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c4c2be" strokeWidth="1.8" style={{ flex: "none" }}>
@@ -70,23 +71,31 @@ export function ExportTimeline() {
 
               <div style={s("padding-left:34px; display:flex; flex-direction:column; gap:11px; padding-bottom:8px;")}>
                 {day.items.map((it) => (
-                  <div key={it.id} style={s("position:relative; background:#fff; border:1px solid #ededeb; border-radius:15px; box-shadow:0 2px 9px rgba(0,0,0,0.03); padding:14px 15px;")}>
-                    <span style={s(`position:absolute; left:-30px; top:24px; width:8px; height:8px; border-radius:50%; background:#fff; border:2px solid ${it.accent}; z-index:1;`)} />
-                    <div style={s("display:flex; align-items:center; gap:13px;")}>
-                      <div style={s(`width:80px; height:54px; border-radius:9px; flex:none; background:${it.thumb}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:10px; font-weight:800; letter-spacing:0.4px; overflow:hidden;`)}>{it.thumbLabel}</div>
-                      <div style={s("flex:1; min-width:0;")}>
-                        <div style={s("display:flex; align-items:center; gap:8px; margin-bottom:6px;")}>
-                          <span style={s(`width:18px; height:18px; border-radius:5px; background:${it.platBg}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; flex:none;`)}>{it.platGlyph}</span>
-                          <span style={s("font-size:12.5px; font-weight:600; color:#6f6d69; white-space:nowrap;")}>{it.platform}</span>
-                          <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
-                          <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{it.time}</span>
+                  <PetalCardLink key={it.id} url={it.url}>
+                    <div style={s("position:relative; background:#fff; border:1px solid #ededeb; border-radius:15px; box-shadow:0 2px 9px rgba(0,0,0,0.03); padding:14px 15px;")}>
+                      <span style={s(`position:absolute; left:-30px; top:24px; width:8px; height:8px; border-radius:50%; background:#fff; border:2px solid ${it.accent}; z-index:1;`)} />
+                      <div style={s("display:flex; align-items:center; gap:13px;")}>
+                        <PetalThumb
+                          thumbBg={it.thumbBg}
+                          thumbImageUrl={it.thumbImageUrl}
+                          thumbLabel={it.thumbLabel}
+                          width={80}
+                          height={54}
+                        />
+                        <div style={s("flex:1; min-width:0;")}>
+                          <div style={s("display:flex; align-items:center; gap:8px; margin-bottom:6px;")}>
+                            <span style={s(`width:18px; height:18px; border-radius:5px; background:${it.platBg}; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:700; flex:none;`)}>{it.platGlyph}</span>
+                            <span style={s("font-size:12.5px; font-weight:600; color:#6f6d69; white-space:nowrap;")}>{it.platform}</span>
+                            <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
+                            <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{it.time}</span>
+                          </div>
+                          <div style={s("font-size:14.5px; font-weight:600; line-height:1.3; color:#1c1b1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;")}>{it.title}</div>
+                          <span style={s(`display:inline-block; margin-top:8px; font-size:11.5px; font-weight:500; border-radius:6px; padding:3px 8px; color:${it.tagColor}; background:${it.tagBg};`)}>{it.tag}</span>
                         </div>
-                        <div style={s("font-size:14.5px; font-weight:600; line-height:1.3; color:#1c1b1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;")}>{it.title}</div>
-                        <span style={s(`display:inline-block; margin-top:8px; font-size:11.5px; font-weight:500; border-radius:6px; padding:3px 8px; color:${it.tagColor}; background:${it.tagBg};`)}>{it.tag}</span>
+                        <Bookmark />
                       </div>
-                      <Bookmark />
                     </div>
-                  </div>
+                  </PetalCardLink>
                 ))}
               </div>
             </div>

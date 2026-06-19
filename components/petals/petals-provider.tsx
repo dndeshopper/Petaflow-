@@ -16,7 +16,13 @@ import {
 } from "@/lib/petals/client";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useOptionalInbox } from "@/components/inbox/inbox-provider";
-import { PETALS_CHANGED_EVENT } from "@/lib/sync-events";
+import { PETALS_CHANGED_EVENT, notifyPetalsChanged } from "@/lib/sync-events";
+
+function schedulePreviewRefresh(refresh: () => Promise<void>): () => void {
+  const delays = [1500, 4000, 8000, 15000];
+  const timers = delays.map((ms) => setTimeout(() => void refresh(), ms));
+  return () => timers.forEach((timer) => clearTimeout(timer));
+}
 
 interface PetalsContextValue {
   petals: Petal[];
@@ -79,6 +85,13 @@ export function PetalsProvider({
           prev.map((p) => (p.id === optimistic.id ? saved : p))
         );
         inbox?.incrementCount();
+        notifyPetalsChanged();
+        if (
+          saved.preview_status === "pending" ||
+          saved.preview_status === "processing"
+        ) {
+          schedulePreviewRefresh(refreshPetals);
+        }
         return saved;
       } catch (err) {
         setPetals((prev) => prev.filter((p) => p.id !== optimistic.id));
@@ -90,7 +103,7 @@ export function PetalsProvider({
         setIsCreating(false);
       }
     },
-    [userId, inbox]
+    [userId, inbox, refreshPetals]
   );
 
   useEffect(() => {
@@ -131,6 +144,7 @@ export function PetalsProvider({
     if (!hasPendingPreview) return;
 
     const interval = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       void refreshPetals();
     }, 4000);
 
@@ -143,13 +157,22 @@ export function PetalsProvider({
     const supabase = createClient();
 
     const mergePetalUpdate = (incoming: Petal) => {
+      let previewChanged = false;
       setPetals((prev) => {
         const index = prev.findIndex((p) => p.id === incoming.id);
         if (index === -1) return prev;
+        const current = prev[index];
+        previewChanged =
+          current.preview_url !== incoming.preview_url ||
+          current.preview_status !== incoming.preview_status ||
+          current.title !== incoming.title;
         const next = [...prev];
-        next[index] = { ...next[index], ...incoming };
+        next[index] = { ...current, ...incoming };
         return next;
       });
+      if (previewChanged) {
+        notifyPetalsChanged();
+      }
     };
 
     const channel = supabase
