@@ -6,6 +6,8 @@ export interface PreviewJob {
   title: string;
   note?: string | null;
   platform?: Platform;
+  preserveExistingPreview?: boolean;
+  existingPreviewUrl?: string | null;
 }
 
 export interface OpenGraphMetadata {
@@ -19,5 +21,5 @@ export interface PreviewResult {
   preview_url: string | null;
   title?: string;
   description?: string;
-  source: "opengraph" | "playwright" | "fallback" | "youtube";
+  source: "opengraph" | "playwright" | "fallback" | "youtube" | "extension";
 }

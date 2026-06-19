@@ -1,9 +1,61 @@
 import { MESSAGE, type CapturePageMessage, type PageCapture } from "./types";
+import {
+  extractYoutubeVideoId,
+  normalizeYoutubeUrl,
+  pickCaptureUrl,
+} from "./url-utils";
 
-/**
- * Captures accurate page metadata from the DOM at save time.
- * The background script requests this when the user clicks "Add to PetalFlow".
- */
+function getYouTubeTitle(): string | null {
+  const selectors = [
+    "h1.ytd-watch-metadata yt-formatted-string",
+    "h1 yt-formatted-string",
+    "#title h1",
+    "meta[property='og:title']",
+  ];
+
+  for (const selector of selectors) {
+    const el = document.querySelector(selector);
+    if (el instanceof HTMLMetaElement && el.content) {
+      return el.content.replace(/\s*-\s*YouTube\s*$/i, "").trim();
+    }
+    const text = el?.textContent?.trim();
+    if (text) return text;
+  }
+
+  return null;
+}
+
+function getYouTubeWatchUrl(): string | null {
+  const id = extractYoutubeVideoId(window.location.href);
+  if (!id) return null;
+  return normalizeYoutubeUrl(`https://www.youtube.com/watch?v=${id}`);
+}
+
+function getPageTitle(): string {
+  const host = window.location.hostname.replace(/^www\./, "");
+
+  if (host.includes("youtube.com") || host === "youtu.be") {
+    return getYouTubeTitle() || document.title.replace(/\s*-\s*YouTube\s*$/i, "").trim() || window.location.href;
+  }
+
+  const ogTitle = document.querySelector("meta[property='og:title']");
+  if (ogTitle instanceof HTMLMetaElement && ogTitle.content) {
+    return ogTitle.content.trim();
+  }
+
+  return document.title?.trim() || window.location.href;
+}
+
+function getPageUrl(linkUrl?: string): string {
+  const candidates = [linkUrl, getYouTubeWatchUrl(), window.location.href];
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const picked = pickCaptureUrl({ linkUrl: raw, pageUrl: window.location.href });
+    if (picked) return picked;
+  }
+  return window.location.href;
+}
+
 chrome.runtime.onMessage.addListener(
   (
     message: CapturePageMessage,
@@ -12,8 +64,8 @@ chrome.runtime.onMessage.addListener(
   ) => {
     if (message.type !== MESSAGE.CAPTURE_PAGE) return;
 
-    const url = message.linkUrl || window.location.href;
-    const title = document.title?.trim() || url;
+    const url = getPageUrl(message.linkUrl);
+    const title = getPageTitle();
     const captured_at = new Date().toISOString();
 
     const capture: PageCapture = {

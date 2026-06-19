@@ -2,9 +2,11 @@ import { after } from "next/server";
 import { closeBrowser } from "@/lib/playwright/browser";
 import { generatePreview } from "./engine";
 import { generateAndStoreFallbackCard } from "./generate-fallback";
+import { isStoredPreviewUrl } from "./preview-url";
 import {
   markPreviewFailed,
   markPreviewProcessing,
+  getPetalPreviewState,
   savePreviewResult,
 } from "./store";
 import type { PreviewJob } from "./types";
@@ -131,7 +133,16 @@ async function drainQueue(): Promise<void> {
 }
 
 export async function processPreviewJob(job: PreviewJob): Promise<void> {
+  const existing = await getPetalPreviewState(job.petalId);
+  const preserveExistingPreview =
+    isStoredPreviewUrl(existing?.preview_url) &&
+    existing?.preview_status === "completed";
+
   await markPreviewProcessing(job.petalId);
-  const result = await generatePreview(job);
+  const result = await generatePreview({
+    ...job,
+    preserveExistingPreview,
+    existingPreviewUrl: existing?.preview_url ?? null,
+  });
   await savePreviewResult(job.petalId, result);
 }

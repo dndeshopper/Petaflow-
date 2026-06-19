@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="it">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +7,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      width: 300px;
+      width: 320px;
       font-family: system-ui, -apple-system, sans-serif;
       background: #FAFAF8;
       color: #1A1A1A;
@@ -31,7 +31,7 @@
     }
     h1 { font-size: 15px; font-weight: 600; }
     .tagline { font-size: 11px; color: #8B8B8B; }
-    p { font-size: 12px; color: #6B6B6B; line-height: 1.5; margin-bottom: 16px; }
+    p { font-size: 12px; color: #6B6B6B; line-height: 1.5; margin-bottom: 14px; }
     label { font-size: 11px; color: #8B8B8B; display: block; margin-bottom: 4px; }
     input {
       width: 100%;
@@ -42,9 +42,10 @@
       margin-bottom: 12px;
       background: white;
     }
+    .actions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
     button {
       width: 100%;
-      padding: 8px;
+      padding: 9px;
       background: #1A1A1A;
       color: white;
       border: none;
@@ -54,8 +55,22 @@
       cursor: pointer;
     }
     button:hover { opacity: 0.9; }
-    .hint { font-size: 10px; color: #B0B0B0; margin-top: 12px; text-align: center; }
+    button.secondary {
+      background: white;
+      color: #1A1A1A;
+      border: 1px solid #E8E8E8;
+    }
+    button:disabled { opacity: 0.6; cursor: wait; }
+    .hint { font-size: 10px; color: #B0B0B0; margin-top: 10px; text-align: center; line-height: 1.4; }
     .status { font-size: 11px; color: #6B7B6E; margin-top: 8px; text-align: center; min-height: 16px; }
+    .status.error { color: #b42318; }
+    a.dashboard-link {
+      display: block;
+      text-align: center;
+      font-size: 11px;
+      color: #6B7B6E;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
@@ -63,19 +78,33 @@
     <div class="logo-icon">🌸</div>
     <div>
       <h1>PetalFlow</h1>
-      <div class="tagline">Save now. Watch later.</div>
+      <div class="tagline">Salva ora. Guarda dopo.</div>
     </div>
   </div>
-  <p>Right-click any page or link and select <strong>Add to PetalFlow</strong>.</p>
-  <label for="apiUrl">API URL</label>
-  <input type="url" id="apiUrl" placeholder="http://localhost:3000" />
-  <label for="apiKey">API Key (optional)</label>
+
+  <p>
+    <strong>Tasto destro</strong> su un video o pagina →
+    <strong>Aggiungi a PetalFlow</strong>.
+  </p>
+
+  <div class="actions">
+    <button id="savePage" type="button">Salva pagina / video corrente</button>
+    <button id="save" type="button" class="secondary">Salva impostazioni</button>
+  </div>
+
+  <label for="apiUrl">URL app</label>
+  <input type="url" id="apiUrl" placeholder="https://petaflow.vercel.app" />
+
+  <label for="apiKey">API Key</label>
   <input type="password" id="apiKey" placeholder="INTERNAL_API_KEY" autocomplete="off" />
-  <label for="userId">User ID (optional)</label>
-  <input type="text" id="userId" placeholder="Supabase user UUID" />
-  <button id="save" type="button">Save Settings</button>
+
+  <label for="userId">User ID</label>
+  <input type="text" id="userId" placeholder="UUID utente Supabase" />
+
   <p class="status" id="status" aria-live="polite"></p>
-  <p class="hint">Matches INTERNAL_API_KEY and PETALFLOW_DEFAULT_USER_ID in your app .env</p>
+  <a class="dashboard-link" id="dashboardLink" href="#" target="_blank" rel="noopener noreferrer">Apri dashboard →</a>
+  <p class="hint">API Key e User ID sono in Vercel / .env del progetto</p>
+
   <script src="popup.js"></script>
 </body>
 </html>

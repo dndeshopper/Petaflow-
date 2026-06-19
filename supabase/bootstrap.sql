@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS public.petal_previews (
   image_url TEXT NOT NULL,
   title TEXT,
   description TEXT,
-  source TEXT NOT NULL CHECK (source IN ('opengraph', 'playwright', 'fallback')),
+  source TEXT NOT NULL CHECK (source IN ('opengraph', 'playwright', 'fallback', 'youtube', 'extension')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

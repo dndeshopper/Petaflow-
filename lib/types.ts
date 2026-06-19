@@ -38,7 +38,7 @@ export interface PetalPreview {
   image_url: string;
   title: string | null;
   description: string | null;
-  source: "opengraph" | "playwright" | "fallback";
+  source: "opengraph" | "playwright" | "fallback" | "youtube" | "extension";
   created_at: string;
 }
 

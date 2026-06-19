@@ -1,6 +1,6 @@
 import type { ExtensionSettings } from "./types";
 
-const DEFAULT_API_URL = "http://localhost:3000";
+const DEFAULT_API_URL = "https://petaflow.vercel.app";
 
 export async function getSettings(): Promise<ExtensionSettings> {
   const stored = await chrome.storage.sync.get([

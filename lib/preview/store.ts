@@ -4,6 +4,36 @@ import {
   setDemoPetalPreviewStatus,
 } from "@/lib/demo-data";
 import type { PreviewResult } from "./types";
+import type { PreviewStatus } from "@/lib/types";
+
+export async function getPetalPreviewState(
+  petalId: string
+): Promise<{
+  preview_url: string | null;
+  preview_status: PreviewStatus;
+} | null> {
+  if (!isSupabaseConfigured()) {
+    const { getDemoPetals } = await import("@/lib/demo-data");
+    const petal = getDemoPetals().find((p) => p.id === petalId);
+    if (!petal) return null;
+    return {
+      preview_url: petal.preview_url,
+      preview_status: petal.preview_status,
+    };
+  }
+
+  const { createServiceClient } = await import("@/lib/supabase/server");
+  const supabase = await createServiceClient();
+
+  const { data, error } = await supabase
+    .from("petals")
+    .select("preview_url, preview_status")
+    .eq("id", petalId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data;
+}
 
 export async function markPreviewProcessing(petalId: string): Promise<void> {
   if (!isSupabaseConfigured()) {

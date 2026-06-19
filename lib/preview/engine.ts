@@ -11,15 +11,14 @@ import { generateAndStoreFallbackCard } from "./generate-fallback";
 import { getYoutubeThumbnailUrl } from "./youtube";
 
 /**
- * Preview pipeline:
- * 1. OpenGraph image (title/description enrich metadata)
- * 2. Playwright screenshot → Supabase Storage
- * 3. Branded fallback card → stored image (never broken)
+ * Preview pipeline (screenshot-first for all platforms):
+ * 1. Playwright / serverless Chromium screenshot → Supabase Storage
+ * 2. YouTube thumbnail or OpenGraph image
+ * 3. Branded fallback card
+ *
+ * OpenGraph is always used to enrich title/description when available.
  */
 export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
-  const ytThumb =
-    job.platform === "youtube" ? getYoutubeThumbnailUrl(job.url) : null;
-
   const og = await extractOpenGraph(job.url);
   const ogTitle = og.data?.title;
   const ogDescription = og.data?.description;
@@ -28,15 +27,13 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
     title: ogTitle ?? job.title,
   };
 
-  const previewImage = og.success && og.data?.image ? og.data.image : ytThumb;
-
-  if (previewImage) {
+  if (job.preserveExistingPreview && job.existingPreviewUrl) {
     return {
       status: "completed",
-      preview_url: previewImage,
+      preview_url: job.existingPreviewUrl,
       title: enrichedJob.title,
       description: ogDescription,
-      source: og.data?.image ? "opengraph" : "youtube",
+      source: "extension",
     };
   }
 
@@ -59,9 +56,23 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
 
   if (screenshot.error) {
     console.warn(
-      `[preview-engine] Playwright failed for ${job.url}:`,
+      `[preview-engine] Screenshot failed for ${job.url}:`,
       screenshot.error
     );
+  }
+
+  const ytThumb =
+    job.platform === "youtube" ? getYoutubeThumbnailUrl(job.url) : null;
+  const previewImage = ytThumb ?? (og.success ? og.data?.image : undefined);
+
+  if (previewImage) {
+    return {
+      status: "completed",
+      preview_url: previewImage,
+      title: enrichedJob.title,
+      description: ogDescription,
+      source: ytThumb ? "youtube" : "opengraph",
+    };
   }
 
   return generateAndStoreFallbackCard(enrichedJob, {

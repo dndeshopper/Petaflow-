@@ -1,6 +1,7 @@
 /** Message types between background and content scripts */
 export const MESSAGE = {
   CAPTURE_PAGE: "PETALFLOW_CAPTURE_PAGE",
+  SAVE_ACTIVE_TAB: "PETALFLOW_SAVE_ACTIVE_TAB",
 } as const;
 
 export interface CapturePageMessage {

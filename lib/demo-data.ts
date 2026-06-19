@@ -264,7 +264,7 @@ export function saveDemoPreviewResult(
     preview_url: string | null;
     title?: string;
     description?: string;
-    source: "opengraph" | "playwright" | "fallback" | "youtube";
+    source: "opengraph" | "playwright" | "fallback" | "youtube" | "extension";
   }
 ): void {
   demoPetals = demoPetals.map((p) =>

@@ -1,4 +1,4 @@
-import type { Browser } from "playwright";
+import type { Browser } from "playwright-core";
 
 const LAUNCH_ARGS = [
   "--no-sandbox",
@@ -9,6 +9,10 @@ const LAUNCH_ARGS = [
 
 let sharedBrowser: Browser | null = null;
 let browserPromise: Promise<Browser> | null = null;
+
+function isVercelRuntime(): boolean {
+  return Boolean(process.env.VERCEL);
+}
 
 export async function getBrowser(): Promise<Browser> {
   if (sharedBrowser?.isConnected()) return sharedBrowser;
@@ -26,6 +30,17 @@ export async function getBrowser(): Promise<Browser> {
 }
 
 async function launchBrowser(): Promise<Browser> {
+  if (isVercelRuntime()) {
+    const chromium = (await import("@sparticuz/chromium")).default;
+    const { chromium: pwChromium } = await import("playwright-core");
+
+    return pwChromium.launch({
+      headless: true,
+      args: [...chromium.args, ...LAUNCH_ARGS],
+      executablePath: await chromium.executablePath(),
+    });
+  }
+
   const { chromium } = await import("playwright");
   return chromium.launch({
     headless: true,
@@ -42,7 +57,7 @@ export async function closeBrowser(): Promise<void> {
 }
 
 export async function withBrowserPage<T>(
-  fn: (page: import("playwright").Page) => Promise<T>
+  fn: (page: import("playwright-core").Page) => Promise<T>
 ): Promise<T> {
   const browser = await getBrowser();
   const context = await browser.newContext({
