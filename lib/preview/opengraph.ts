@@ -1,4 +1,5 @@
 import type { OpenGraphMetadata } from "./types";
+import { cleanTitle } from "@/lib/title/resolve";
 
 const USER_AGENT =  "Mozilla/5.0 (compatible; PetalFlow/1.0; +https://petalflow.app)";
 
@@ -47,7 +48,7 @@ export async function extractOpenGraph(
     }
 
     const data: OpenGraphMetadata = {};
-    if (title) data.title = title;
+    if (title) data.title = cleanTitle(title);
     if (image) data.image = image;
     if (description) data.description = description;
 

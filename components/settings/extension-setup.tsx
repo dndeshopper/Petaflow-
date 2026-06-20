@@ -9,9 +9,10 @@ type HealthStatus = "idle" | "loading" | "ok" | "error";
 interface ExtensionSetupProps {
   appUrl: string;
   apiKey: string | null;
+  userId: string;
 }
 
-export function ExtensionSetup({ appUrl, apiKey }: ExtensionSetupProps) {
+export function ExtensionSetup({ appUrl, apiKey, userId }: ExtensionSetupProps) {
   const [status, setStatus] = useState<HealthStatus>("idle");
   const [message, setMessage] = useState<string | null>(null);
 
@@ -57,8 +58,9 @@ export function ExtensionSetup({ appUrl, apiKey }: ExtensionSetupProps) {
         </div>
         <div>
           <label className="text-[11px] text-muted-foreground">User ID</label>
-          <p className="text-[12px] text-muted-foreground">
-            Leave empty in demo mode. With Supabase, use your auth user UUID.
+          <p className="font-mono text-[12px] text-foreground">{userId}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Copy into the extension popup after signing in.
           </p>
         </div>
       </div>

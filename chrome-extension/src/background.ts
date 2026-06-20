@@ -1,6 +1,7 @@
 import { createPetal, PetalApiError, uploadPetalScreenshot } from "./api";
 import { getSettings } from "./storage";
 import { pickCaptureUrl, isSavableUrl } from "./url-utils";
+import { resolveTitleBeforeSave } from "./title-utils";
 import {
   MESSAGE,
   type CapturePageMessage,
@@ -135,11 +136,14 @@ async function savePetalWithScreenshot(
   tab?: chrome.tabs.Tab
 ): Promise<void> {
   const settings = await getSettings();
+  const title = await resolveTitleBeforeSave(capture.url, capture.title);
+  const resolvedCapture = { ...capture, title };
+
   const { id } = await createPetal(settings, {
-    url: capture.url,
-    title: capture.title,
-    note: capture.selectionText,
-    captured_at: capture.captured_at,
+    url: resolvedCapture.url,
+    title: resolvedCapture.title,
+    note: resolvedCapture.selectionText,
+    captured_at: resolvedCapture.captured_at,
   });
 
   if (tab) {
@@ -147,7 +151,7 @@ async function savePetalWithScreenshot(
     if (screenshot) {
       try {
         await uploadPetalScreenshot(settings, id, screenshot, {
-          title: capture.title,
+          title: resolvedCapture.title,
         });
       } catch (err) {
         console.warn("[PetalFlow] Preview upload failed:", err);

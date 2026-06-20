@@ -1,0 +1,19 @@
+# Supabase project config for PetalFlow (push with: npx supabase config push --project-ref <ref>)
+# Requires SUPABASE_ACCESS_TOKEN from https://supabase.com/dashboard/account/tokens
+
+[auth]
+enabled = true
+site_url = "https://petaflow.vercel.app"
+additional_redirect_urls = [
+  "https://petaflow.vercel.app/auth/callback",
+  "http://localhost:3000/auth/callback",
+]
+jwt_expiry = 3600
+enable_signup = true
+enable_anonymous_sign_ins = false
+minimum_password_length = 8
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false

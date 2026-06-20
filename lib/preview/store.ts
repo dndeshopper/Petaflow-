@@ -4,7 +4,8 @@ import {
   setDemoPetalPreviewStatus,
 } from "@/lib/demo-data";
 import type { PreviewResult } from "./types";
-import type { PreviewStatus } from "@/lib/types";
+import type { Platform, PreviewStatus } from "@/lib/types";
+import { pickBetterTitle, resolvePetalTitle, isWeakTitle } from "@/lib/title/resolve";
 
 export async function getPetalPreviewState(
   petalId: string
@@ -62,14 +63,37 @@ export async function savePreviewResult(
   const { createServiceClient } = await import("@/lib/supabase/server");
   const supabase = await createServiceClient();
 
+  const { data: existing } = await supabase
+    .from("petals")
+    .select("title, url, platform")
+    .eq("id", petalId)
+    .maybeSingle();
+
+  let resolvedTitle = result.title;
+  if (existing) {
+    const platform = existing.platform as Platform;
+    const merged = pickBetterTitle(
+      existing.title,
+      result.title,
+      existing.url,
+      platform
+    );
+    resolvedTitle = await resolvePetalTitle({
+      url: existing.url,
+      platform,
+      currentTitle: merged,
+      skipOpenGraph: Boolean(result.title) && !isWeakTitle(merged, existing.url, platform),
+    });
+  }
+
   const petalUpdate: Record<string, string | null> = {
     preview_status: result.status,
     preview_url: result.preview_url,
     description: result.description ?? null,
   };
 
-  if (result.title) {
-    petalUpdate.title = result.title;
+  if (resolvedTitle) {
+    petalUpdate.title = resolvedTitle;
   }
 
   const { error: petalError } = await supabase

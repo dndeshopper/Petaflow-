@@ -1,4 +1,5 @@
 import { AskPetalFlow } from "@/components/search/ask-petalflow";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ExtensionSetup } from "@/components/settings/extension-setup";
 import { getCurrentUser } from "@/lib/data";
 
@@ -39,10 +40,20 @@ export default async function SettingsPage() {
                   {user.is_pro ? "Pro" : "Free"}
                 </p>
               </div>
+              <div>
+                <label className="text-[11px] text-muted-foreground">User ID</label>
+                <p className="font-mono text-[12px] text-foreground">{user.id}</p>
+              </div>
+            </div>
+            <div className="mt-4">
+              <SignOutButton
+                label="Sign out"
+                className="rounded-lg border border-border px-4 py-2 text-[13px] font-semibold text-destructive hover:bg-muted"
+              />
             </div>
           </section>
 
-          <ExtensionSetup appUrl={appUrl} apiKey={apiKey} />
+          <ExtensionSetup appUrl={appUrl} apiKey={apiKey} userId={user.id} />
 
           <section className="rounded-xl border border-border bg-card p-6 shadow-soft">
             <h2 className="mb-4 text-[13px] font-semibold text-foreground">

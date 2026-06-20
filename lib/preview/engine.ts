@@ -9,6 +9,7 @@ import {
 } from "@/lib/storage/preview-upload";
 import { generateAndStoreFallbackCard } from "./generate-fallback";
 import { getYoutubeThumbnailUrl } from "./youtube";
+import { pickBetterTitle, resolvePetalTitle } from "@/lib/title/resolve";
 
 /**
  * Preview pipeline (screenshot-first for all platforms):
@@ -22,16 +23,22 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
   const og = await extractOpenGraph(job.url);
   const ogTitle = og.data?.title;
   const ogDescription = og.data?.description;
-  const enrichedJob: PreviewJob = {
-    ...job,
-    title: ogTitle ?? job.title,
-  };
+  const seedTitle = pickBetterTitle(job.title, ogTitle, job.url, job.platform);
+
+  async function finalizeTitle(extra?: string | null): Promise<string> {
+    return resolvePetalTitle({
+      url: job.url,
+      platform: job.platform,
+      currentTitle: pickBetterTitle(seedTitle, extra, job.url, job.platform),
+      skipOpenGraph: true,
+    });
+  }
 
   if (job.preserveExistingPreview && job.existingPreviewUrl) {
     return {
       status: "completed",
       preview_url: job.existingPreviewUrl,
-      title: enrichedJob.title,
+      title: await finalizeTitle(),
       description: ogDescription,
       source: "extension",
     };
@@ -48,7 +55,7 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
     return {
       status: "completed",
       preview_url: previewUrl,
-      title: screenshot.title ?? enrichedJob.title,
+      title: await finalizeTitle(screenshot.title),
       description: ogDescription,
       source: "playwright",
     };
@@ -69,11 +76,16 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
     return {
       status: "completed",
       preview_url: previewImage,
-      title: enrichedJob.title,
+      title: await finalizeTitle(screenshot.title),
       description: ogDescription,
       source: ytThumb ? "youtube" : "opengraph",
     };
   }
+
+  const enrichedJob: PreviewJob = {
+    ...job,
+    title: await finalizeTitle(screenshot.title),
+  };
 
   return generateAndStoreFallbackCard(enrichedJob, {
     description: ogDescription,

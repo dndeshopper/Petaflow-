@@ -8,7 +8,6 @@ import {
   DEMO_GARDEN_TOPICS,
 } from "@/lib/demo-data";
 import {
-  getDefaultUserId,
   getFallbackUserProfile,
   resolvePetalUserId,
   shouldUseServiceRole,
@@ -23,6 +22,8 @@ import type {
   UserProfile,
 } from "@/lib/types";
 import { detectPlatform, resolvePetalPlatform } from "@/lib/platforms";
+import { scheduleWeakTitleBackfill } from "@/lib/title/backfill";
+import { cleanTitle, isWeakTitle, resolvePetalTitle } from "@/lib/title/resolve";
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
 export interface DataContext {
@@ -39,7 +40,7 @@ export async function getSupabaseClients(ctx?: DataContext) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const userId = resolvePetalUserId(user, ctx?.userId);
+  const userId = resolvePetalUserId(user, ctx?.userId, ctx?.apiKey ?? null);
   const useService = shouldUseServiceRole(user, ctx?.apiKey ?? null, ctx?.userId);
 
   if (useService && userId) {
@@ -53,7 +54,7 @@ export async function getCurrentUser(ctx?: DataContext): Promise<UserProfile> {
   if (!isSupabaseConfigured()) return DEMO_USER;
 
   const { supabase, userId, sessionUser } = await getSupabaseClients(ctx);
-  const activeId = sessionUser?.id ?? userId ?? getDefaultUserId();
+  const activeId = sessionUser?.id ?? userId;
 
   if (!activeId) return DEMO_USER;
 
@@ -66,10 +67,17 @@ export async function getCurrentUser(ctx?: DataContext): Promise<UserProfile> {
   if (data) return data;
 
   if (sessionUser) {
+    const metaName =
+      typeof sessionUser.user_metadata?.full_name === "string"
+        ? sessionUser.user_metadata.full_name
+        : "";
     return {
-      ...DEMO_USER,
       id: sessionUser.id,
       email: sessionUser.email ?? "",
+      full_name: metaName || sessionUser.email?.split("@")[0] || "User",
+      avatar_url: null,
+      is_pro: false,
+      created_at: sessionUser.created_at,
     };
   }
 
@@ -77,7 +85,11 @@ export async function getCurrentUser(ctx?: DataContext): Promise<UserProfile> {
 }
 
 export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
-  if (!isSupabaseConfigured()) return getDemoPetals();
+  if (!isSupabaseConfigured()) {
+    const petals = getDemoPetals();
+    scheduleWeakTitleBackfill(petals);
+    return petals;
+  }
 
   const { supabase, userId } = await getSupabaseClients(ctx);
   if (!userId) return getDemoPetals();
@@ -115,6 +127,8 @@ export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
     });
   }
 
+  scheduleWeakTitleBackfill(petals);
+
   return petals;
 }
 
@@ -125,12 +139,28 @@ export async function createPetal(
   const platform = input.platform ?? detectPlatform(input.url);
   const youtubeThumb =
     platform === "youtube" ? getYoutubeThumbnailUrl(input.url) : null;
-  let title = input.title;
-  if (!title) {
+
+  let title = input.title?.trim();
+  if (title) {
+    title = cleanTitle(title, platform);
+  }
+
+  if (!title || isWeakTitle(title, input.url, platform)) {
     try {
-      title = new URL(input.url).hostname;
-    } catch {
-      title = input.url;
+      title = await resolvePetalTitle({
+        url: input.url,
+        platform,
+        currentTitle: title,
+      });
+    } catch (err) {
+      console.warn("[createPetal] Title resolve failed:", err);
+      if (!title) {
+        try {
+          title = new URL(input.url).hostname;
+        } catch {
+          title = input.url;
+        }
+      }
     }
   }
 

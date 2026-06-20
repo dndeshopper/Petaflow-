@@ -31,10 +31,16 @@ function getYouTubeWatchUrl(): string | null {
   return normalizeYoutubeUrl(`https://www.youtube.com/watch?v=${id}`);
 }
 
-function getPageTitle(): string {
+function getPageTitle(linkUrl?: string): string {
   const host = window.location.hostname.replace(/^www\./, "");
 
   if (host.includes("youtube.com") || host === "youtu.be") {
+    const savedId = linkUrl ? extractYoutubeVideoId(linkUrl) : null;
+    const pageId = extractYoutubeVideoId(window.location.href);
+    if (savedId && pageId && savedId !== pageId) {
+      return linkUrl || window.location.href;
+    }
+
     return getYouTubeTitle() || document.title.replace(/\s*-\s*YouTube\s*$/i, "").trim() || window.location.href;
   }
 
@@ -74,7 +80,16 @@ chrome.runtime.onMessage.addListener(
     if (message.type !== MESSAGE.CAPTURE_PAGE) return;
 
     const url = getPageUrl(message.linkUrl);
-    const title = getPageTitle();
+    let title = getPageTitle(message.linkUrl);
+
+    if (message.linkUrl) {
+      const savedId = extractYoutubeVideoId(url);
+      const pageId = extractYoutubeVideoId(window.location.href);
+      if (savedId && savedId !== pageId) {
+        title = url;
+      }
+    }
+
     const captured_at = new Date().toISOString();
 
     const capture: PageCapture = {

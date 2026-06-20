@@ -8,6 +8,7 @@ import type {
   UserProfile,
 } from "@/lib/types";
 import { getPlatformConfig, resolvePetalPlatform } from "@/lib/platforms";
+import { getTimeGreeting } from "@/lib/utils";
 
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
@@ -155,10 +156,50 @@ function thumbLabel(petal: Petal, hasImage: boolean): string {
   return words.map((w) => w.slice(0, 4).toUpperCase()).join(" ");
 }
 
+const X_TITLE_MAX_LENGTH = 100;
+
+/** Strip OG boilerplate from X/Twitter titles for compact card display. */
+function cleanXTitle(raw: string): string {
+  const trimmed = raw.trim();
+
+  const quoted = trimmed.match(/\bon X:\s*["']([\s\S]+?)["']\s*(?:\/\s*X)?\s*$/i);
+  if (quoted?.[1]) {
+    return quoted[1].replace(/\s*https?:\/\/\S+/g, "").trim();
+  }
+
+  const plain = trimmed.match(/\bon X:\s*([\s\S]+?)(?:\s*\/\s*X)?\s*$/i);
+  if (plain?.[1]) {
+    return plain[1]
+      .replace(/^["']|["']$/g, "")
+      .replace(/\s*https?:\/\/\S+/g, "")
+      .trim();
+  }
+
+  return trimmed
+    .replace(/\s*\/\s*X\s*$/i, "")
+    .replace(/\s*https?:\/\/\S+/g, "")
+    .trim();
+}
+
+export function petalDisplayTitle(petal: Petal): string {
+  const platform = resolvePetalPlatform(petal);
+  let title = petal.title.trim();
+
+  if (platform === "x") {
+    title = cleanXTitle(title);
+    if (title.length > X_TITLE_MAX_LENGTH) {
+      return `${title.slice(0, X_TITLE_MAX_LENGTH - 1).trimEnd()}…`;
+    }
+  }
+
+  return title;
+}
+
 export interface ExportTimelineItem {
   id: string;
   url: string;
   platform: string;
+  platformId: Platform;
   platGlyph: string;
   platBg: string;
   time: string;
@@ -196,10 +237,11 @@ export function petalToTimelineItem(petal: Petal): ExportTimelineItem {
     id: petal.id,
     url: petal.url,
     platform: plat.platform,
+    platformId: platform,
     platGlyph: plat.platGlyph,
     platBg: plat.platBg,
     time: petalTime(petal),
-    title: petal.title,
+    title: petalDisplayTitle(petal),
     tag: petal.theme ?? "Uncategorized",
     tagColor: theme.tagColor,
     tagBg: theme.tagBg,
@@ -285,6 +327,7 @@ export interface ExportSearchResult {
   id: string;
   url: string;
   platform: string;
+  platformId: Platform;
   platGlyph: string;
   platBg: string;
   date: string;
@@ -303,6 +346,7 @@ export function petalToSearchResult(petal: Petal): ExportSearchResult {
     id: petal.id,
     url: item.url,
     platform: item.platform,
+    platformId: item.platformId,
     platGlyph: item.platGlyph,
     platBg: item.platBg,
     date: petalDate(petal),
@@ -384,6 +428,7 @@ export interface ExportInboxItem {
   id: string;
   url: string;
   platform: string;
+  platformId: Platform;
   platGlyph: string;
   platBg: string;
   time: string;
@@ -403,6 +448,7 @@ export function petalToInboxItem(petal: Petal): ExportInboxItem {
     id: petal.id,
     url: item.url,
     platform: item.platform,
+    platformId: item.platformId,
     platGlyph: item.platGlyph,
     platBg: item.platBg,
     time: petalRelative(petal),
@@ -417,12 +463,8 @@ export function petalToInboxItem(petal: Petal): ExportInboxItem {
   };
 }
 
-export function greetingForUser(user: UserProfile): string {
-  const hour = new Date().getHours();
-  const salutation =
-    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-  const first = user.full_name?.split(" ")[0] ?? "there";
-  return `${salutation}, ${first}`;
+export function greetingForUser(_user: UserProfile): string {
+  return getTimeGreeting();
 }
 
 export function todayOverview(stats: TodayStats) {

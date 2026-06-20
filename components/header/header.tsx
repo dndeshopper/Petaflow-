@@ -2,7 +2,7 @@
 
 import { Menu } from "lucide-react";
 import { design } from "@/lib/design-tokens";
-import { getGreeting } from "@/lib/utils";
+import { getTimeGreeting } from "@/lib/utils";
 
 import { useGlobalSearch } from "@/components/search/search-provider";
 
@@ -12,9 +12,8 @@ interface HeaderProps {
   onMenuClick?: () => void;
 }
 
-export function Header({ userName, newPetalsCount, onMenuClick }: HeaderProps) {
+export function Header({ userName: _userName, newPetalsCount, onMenuClick }: HeaderProps) {
   const { openSearch } = useGlobalSearch();
-  const firstName = userName.split(" ")[0];
 
   return (
     <header
@@ -39,7 +38,7 @@ export function Header({ userName, newPetalsCount, onMenuClick }: HeaderProps) {
               color: design.colors.text,
             }}
           >
-            {getGreeting(firstName)}
+            {getTimeGreeting()}
           </h1>
           <div
             className="mt-1.5 text-sm sm:text-[14.5px]"

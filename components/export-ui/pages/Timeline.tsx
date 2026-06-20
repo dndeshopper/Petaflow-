@@ -8,6 +8,7 @@ import { usePetals } from "@/components/petals/petals-provider";
 import { buildTimelineDays, buildTimelineFilters } from "@/lib/export-ui/adapters";
 import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
 import { PetalDeleteButton } from "@/components/export-ui/PetalDeleteButton";
+import { PetalTitleDisplay } from "@/components/export-ui/PetalTitleDisplay";
 
 export function ExportTimeline() {
   const searchParams = useSearchParams();
@@ -84,7 +85,7 @@ export function ExportTimeline() {
                               <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
                               <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{it.time}</span>
                             </div>
-                            <div style={s("font-size:14.5px; font-weight:600; line-height:1.3; color:#1c1b1a; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;")}>{it.title}</div>
+                            <PetalTitleDisplay title={it.title} platformId={it.platformId} fontSize={14.5} />
                             <span style={s(`display:inline-block; margin-top:8px; font-size:11.5px; font-weight:500; border-radius:6px; padding:3px 8px; color:${it.tagColor}; background:${it.tagBg};`)}>{it.tag}</span>
                           </div>
                         </div>

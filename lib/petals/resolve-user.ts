@@ -14,11 +14,17 @@ export function isInternalApiRequest(apiKey: string | null): boolean {
 /** Resolves the active user id for petal reads/writes on the server. */
 export function resolvePetalUserId(
   sessionUser: User | null,
-  explicitUserId?: string | null
+  explicitUserId?: string | null,
+  apiKey?: string | null
 ): string | null {
   if (sessionUser?.id) return sessionUser.id;
-  if (explicitUserId) return explicitUserId;
-  return getDefaultUserId();
+  if (isInternalApiRequest(apiKey ?? null) && explicitUserId) {
+    return explicitUserId;
+  }
+  if (process.env.NODE_ENV === "development") {
+    return getDefaultUserId();
+  }
+  return null;
 }
 
 export function shouldUseServiceRole(
@@ -29,7 +35,8 @@ export function shouldUseServiceRole(
   if (!isSupabaseConfigured()) return false;
   if (sessionUser) return false;
   if (isInternalApiRequest(apiKey) && explicitUserId) return true;
-  return !!getDefaultUserId();
+  if (process.env.NODE_ENV === "development" && getDefaultUserId()) return true;
+  return false;
 }
 
 export function getFallbackUserProfile(userId: string) {
@@ -37,5 +44,7 @@ export function getFallbackUserProfile(userId: string) {
   return {
     ...DEMO_USER,
     id: userId,
+    full_name: "",
+    email: "",
   };
 }

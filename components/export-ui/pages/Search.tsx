@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { s } from "@/lib/export-style";
 import { petalToSearchResult } from "@/lib/export-ui/adapters";
 import { PetalThumb } from "@/components/export-ui/PetalCardLink";
+import { PetalTitleDisplay } from "@/components/export-ui/PetalTitleDisplay";
 import { PETALS_CHANGED_EVENT } from "@/lib/sync-events";
 import type { Petal, Platform } from "@/lib/types";
 
@@ -155,7 +156,7 @@ export function ExportSearch() {
                   <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
                   <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{r.date}</span>
                 </div>
-                <div style={s("font-size:15px; font-weight:600; line-height:1.3;")}>{r.title}</div>
+                <PetalTitleDisplay title={r.title} platformId={r.platformId} />
               </div>
               <span style={s(`font-size:11.5px; font-weight:500; border-radius:6px; padding:3px 8px; color:${r.tagColor}; background:${r.tagBg}; flex:none;`)}>{r.tag}</span>
             </a>

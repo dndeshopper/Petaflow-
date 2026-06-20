@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { s } from "@/lib/export-style";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { useInbox } from "@/components/inbox/inbox-provider";
 import type { UserProfile } from "@/lib/types";
 
@@ -84,6 +85,8 @@ export function ExportSidebar({ user }: ExportSidebarProps) {
   const pathname = usePathname();
   const { count: inboxCount } = useInbox();
   const [showExtension, setShowExtension] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const displayName = user.full_name?.trim() || user.email.split("@")[0] || "Account";
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href;
@@ -126,22 +129,57 @@ export function ExportSidebar({ user }: ExportSidebarProps) {
 
       <div style={s("flex:1;")} />
 
-      <div style={s("display:flex; align-items:center; gap:11px; padding:8px 8px 18px;")}>
-        <div style={s("width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#cfc9f5,#a99cf0); flex:none; overflow:hidden; display:flex; align-items:flex-end; justify-content:center;")}>
-          <svg width="38" height="38" viewBox="0 0 38 38">
-            <circle cx="19" cy="15" r="6.5" fill="#6c5ce7" />
-            <path d="M7 38c0-7 5.4-11 12-11s12 4 12 11Z" fill="#6c5ce7" />
-          </svg>
-        </div>
-        <div style={s("line-height:1.15; flex:1;")}>
-          <div style={s("font-size:14px; font-weight:600;")}>{user.full_name}</div>
-          <div style={s("font-size:12px; color:#6c5ce7; font-weight:500;")}>
-            {user.is_pro ? "Pro Plan" : "Free Plan"}
+      <div style={s("position:relative; padding:8px 8px 18px;")}>
+        <button
+          type="button"
+          onClick={() => setMenuOpen((open) => !open)}
+          style={s("display:flex; align-items:center; gap:11px; width:100%; border:none; background:none; cursor:pointer; padding:0; text-align:left;")}
+        >
+          <div style={s("width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#cfc9f5,#a99cf0); flex:none; overflow:hidden; display:flex; align-items:flex-end; justify-content:center;")}>
+            <svg width="38" height="38" viewBox="0 0 38 38">
+              <circle cx="19" cy="15" r="6.5" fill="#6c5ce7" />
+              <path d="M7 38c0-7 5.4-11 12-11s12 4 12 11Z" fill="#6c5ce7" />
+            </svg>
           </div>
-        </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b3b1ad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+          <div style={s("line-height:1.15; flex:1; min-width:0;")}>
+            <div style={s("font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;")}>
+              {displayName}
+            </div>
+            <div style={s("font-size:12px; color:#6c5ce7; font-weight:500;")}>
+              {user.is_pro ? "Pro Plan" : "Free Plan"}
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#b3b1ad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+
+        {menuOpen && (
+          <div style={s("position:absolute; left:8px; right:8px; bottom:calc(100% - 4px); background:#fff; border:1px solid #ececea; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.08); overflow:hidden; z-index:20;")}>
+            <Link
+              href="/settings"
+              onClick={() => setMenuOpen(false)}
+              style={s("display:block; padding:12px 14px; font-size:13.5px; font-weight:600; color:#1c1b1a; text-decoration:none; border-bottom:1px solid #f0efed;")}
+            >
+              Impostazioni
+            </Link>
+            <SignOutButton
+              label="Esci"
+              style={{
+                display: "block",
+                width: "100%",
+                padding: "12px 14px",
+                fontSize: "13.5px",
+                fontWeight: 600,
+                color: "#c0392b",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                textAlign: "left",
+              }}
+            />
+          </div>
+        )}
       </div>
 
       {showExtension && (

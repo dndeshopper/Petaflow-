@@ -5,6 +5,7 @@ import { s } from "@/lib/export-style";
 import { PageHeader } from "@/components/export-ui/Header";
 import { petalToInboxItem } from "@/lib/export-ui/adapters";
 import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
+import { PetalTitleDisplay } from "@/components/export-ui/PetalTitleDisplay";
 import { performInboxActionRequest } from "@/lib/inbox/client";
 import { notifyPetalsChanged } from "@/lib/sync-events";
 import { useInbox } from "@/components/inbox/inbox-provider";
@@ -106,7 +107,7 @@ export function ExportInbox() {
                       <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
                       <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{it.time}</span>
                     </div>
-                    <div style={s("font-size:15px; font-weight:600; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;")}>{it.title}</div>
+                    <PetalTitleDisplay title={it.title} platformId={it.platformId} />
                     <div style={s("display:flex; align-items:center; gap:7px; margin-top:9px;")}>
                       <span style={s("font-size:12px; color:#a7a5a1;")}>Suggested:</span>
                       <span style={s(`display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:${it.tagColor}; background:${it.tagBg}; border-radius:7px; padding:3px 9px;`)}>

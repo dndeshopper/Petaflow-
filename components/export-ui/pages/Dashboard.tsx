@@ -9,9 +9,10 @@ import { usePetals } from "@/components/petals/petals-provider";
 import { AddPetalDialog } from "@/components/petals/add-petal-dialog";
 import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
 import { PetalDeleteButton } from "@/components/export-ui/PetalDeleteButton";
+import { PetalTitleDisplay } from "@/components/export-ui/PetalTitleDisplay";
+import { getTimeGreeting } from "@/lib/utils";
 import {
   getTodayPetals,
-  greetingForUser,
   petalToTimelineItem,
   todayOverview,
 } from "@/lib/export-ui/adapters";
@@ -88,7 +89,7 @@ interface ExportDashboardProps {
   stats: TodayStats;
 }
 
-export function ExportDashboard({ user, stats }: ExportDashboardProps) {
+export function ExportDashboard({ stats }: ExportDashboardProps) {
   const { petals, newTodayCount } = usePetals();
   const [addOpen, setAddOpen] = useState(false);
   const todayPetals = getTodayPetals(petals);
@@ -100,7 +101,7 @@ export function ExportDashboard({ user, stats }: ExportDashboardProps) {
     <>
       <header style={s("display:flex; align-items:flex-start; gap:24px; padding:30px 34px 24px 40px;")}>
         <div style={s("flex:1; min-width:0;")}>
-          <h1 style={s("margin:0; font-size:28px; font-weight:700; letter-spacing:-0.7px;")}>{greetingForUser(user)}</h1>
+          <h1 style={s("margin:0; font-size:28px; font-weight:700; letter-spacing:-0.7px;")}>{getTimeGreeting()}</h1>
           <div style={s("font-size:14.5px; color:#9a9893; margin-top:7px;")}>
             You have {newTodayCount} new petal{newTodayCount !== 1 ? "s" : ""} today
           </div>
@@ -153,12 +154,12 @@ export function ExportDashboard({ user, stats }: ExportDashboardProps) {
                               />
                             )}
                             <div style={s("flex:1; min-width:0;")}>
-                              <div style={s("font-size:15px; font-weight:600; line-height:1.3;")}>{item.title}</div>
+                              <PetalTitleDisplay title={item.title} platformId={item.platformId} />
                               <span style={s(`display:inline-block; margin-top:10px; font-size:12px; color:${item.tagColor}; background:${item.tagBg}; border-radius:7px; padding:4px 9px; font-weight:500;`)}>{item.tag}</span>
                             </div>
                           </div>
                         </PetalCardLink>
-                        <PetalDeleteButton petalId={petal.id} title={item.title} />
+                        <PetalDeleteButton petalId={petal.id} title={petal.title} />
                       </div>
                     </CardShell>
                   </Row>

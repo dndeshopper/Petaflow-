@@ -20,12 +20,16 @@ export function formatRelativeTime(date: string | Date): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export function getGreeting(name: string): string {
-  const firstName = name.split(" ")[0];
+export function getTimeGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return `Good morning, ${firstName}`;
-  if (hour < 17) return `Good afternoon, ${firstName}`;
-  return `Good evening, ${firstName}`;
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+/** @deprecated Name is no longer shown in the dashboard greeting. */
+export function getGreeting(_name?: string): string {
+  return getTimeGreeting();
 }
 
 export function formatPetalTime(date: string | Date): string {

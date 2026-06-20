@@ -93,7 +93,24 @@ export async function capturePageScreenshot(
       await page.waitForTimeout(POST_LOAD_SETTLE_MS);
 
       const finalUrl = page.url();
-      const title = (await page.title()) || undefined;
+      const domTitle = await page
+        .evaluate(() => {
+          const metaOg = document.querySelector('meta[property="og:title"]');
+          if (metaOg instanceof HTMLMetaElement && metaOg.content) {
+            return metaOg.content.trim();
+          }
+
+          const ytTitle = document.querySelector(
+            "h1.ytd-watch-metadata yt-formatted-string, h1 yt-formatted-string"
+          );
+          if (ytTitle?.textContent?.trim()) {
+            return ytTitle.textContent.trim();
+          }
+
+          return document.title?.trim() || null;
+        })
+        .catch(() => null);
+      const title = domTitle || (await page.title()) || undefined;
 
       if (finalUrl.startsWith("chrome-error://")) {
         return {

@@ -11,6 +11,7 @@
     "predev": "node scripts/extract-design.js",
     "build:extension": "node chrome-extension/build.mjs",
     "setup:supabase": "node scripts/create-supabase-user.mjs && node scripts/bootstrap-supabase.mjs",
+    "setup:supabase:auth": "node scripts/setup-supabase-production.mjs",
     "setup:supabase:user": "node scripts/create-supabase-user.mjs",
     "typecheck:extension": "tsc -p chrome-extension/tsconfig.json",
     "postinstall": "node -e \"if(process.env.VERCEL){process.exit(0)}\" && playwright install chromium || true"

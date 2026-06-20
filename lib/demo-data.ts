@@ -257,6 +257,12 @@ export function setDemoPetalPreviewStatus(
   );
 }
 
+export function updateDemoPetalTitle(petalId: string, title: string): void {
+  demoPetals = demoPetals.map((p) =>
+    p.id === petalId ? { ...p, title } : p
+  );
+}
+
 export function saveDemoPreviewResult(
   petalId: string,
   result: {
