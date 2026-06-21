@@ -10,6 +10,22 @@ import {
 import { generateAndStoreFallbackCard } from "./generate-fallback";
 import { getYoutubeThumbnailUrl, isYoutubeClassicThumbnailUrl } from "./youtube";
 import { pickBetterTitle, resolvePetalTitle } from "@/lib/title/resolve";
+import { normalizeXStatusUrl, pickXPostUrl } from "@/lib/url/x";
+
+function improvedXUrl(currentUrl: string, ogUrl?: string): string | undefined {
+  if (normalizeXStatusUrl(currentUrl)) return undefined;
+  const resolved = pickXPostUrl(ogUrl, currentUrl);
+  return resolved && resolved !== currentUrl ? resolved : undefined;
+}
+
+function withXUrl(
+  result: PreviewResult,
+  job: PreviewJob,
+  ogUrl?: string
+): PreviewResult {
+  const url = job.platform === "x" ? improvedXUrl(job.url, ogUrl) : undefined;
+  return url ? { ...result, url } : result;
+}
 
 async function buildYoutubePreviewResult(
   job: PreviewJob,
@@ -56,7 +72,7 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
       ogDescription,
       finalizeTitle
     );
-    if (youtubeResult) return youtubeResult;
+    if (youtubeResult) return withXUrl(youtubeResult, job, og.data?.url);
   }
 
   const preserveExtensionPreview =
@@ -67,13 +83,17 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
       : true);
 
   if (preserveExtensionPreview && job.existingPreviewUrl) {
-    return {
-      status: "completed",
-      preview_url: job.existingPreviewUrl,
-      title: await finalizeTitle(),
-      description: ogDescription,
-      source: "extension",
-    };
+    return withXUrl(
+      {
+        status: "completed",
+        preview_url: job.existingPreviewUrl,
+        title: await finalizeTitle(),
+        description: ogDescription,
+        source: "extension",
+      },
+      job,
+      og.data?.url
+    );
   }
 
   const screenshot = await capturePageScreenshot({ url: job.url });
@@ -84,13 +104,17 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
       screenshot.buffer
     );
 
-    return {
-      status: "completed",
-      preview_url: previewUrl,
-      title: await finalizeTitle(screenshot.title),
-      description: ogDescription,
-      source: "playwright",
-    };
+    return withXUrl(
+      {
+        status: "completed",
+        preview_url: previewUrl,
+        title: await finalizeTitle(screenshot.title),
+        description: ogDescription,
+        source: "playwright",
+      },
+      job,
+      og.data?.url
+    );
   }
 
   if (screenshot.error) {
@@ -105,13 +129,17 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
   const previewImage = ytThumb ?? (og.success ? og.data?.image : undefined);
 
   if (previewImage) {
-    return {
-      status: "completed",
-      preview_url: previewImage,
-      title: await finalizeTitle(screenshot.title),
-      description: ogDescription,
-      source: ytThumb ? "youtube" : "opengraph",
-    };
+    return withXUrl(
+      {
+        status: "completed",
+        preview_url: previewImage,
+        title: await finalizeTitle(screenshot.title),
+        description: ogDescription,
+        source: ytThumb ? "youtube" : "opengraph",
+      },
+      job,
+      og.data?.url
+    );
   }
 
   const enrichedJob: PreviewJob = {
@@ -119,9 +147,13 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
     title: await finalizeTitle(screenshot.title),
   };
 
-  return generateAndStoreFallbackCard(enrichedJob, {
-    description: ogDescription,
-  });
+  return withXUrl(
+    await generateAndStoreFallbackCard(enrichedJob, {
+      description: ogDescription,
+    }),
+    job,
+    og.data?.url
+  );
 }
 
 async function resolveStoredPreviewUrl(

@@ -5,6 +5,8 @@ import Image from "next/image";
 import { design, getThemeStyle } from "@/lib/design-tokens";
 import { getPlatformConfig, resolvePetalPlatform } from "@/lib/platforms";
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
+import { petalDisplayTitle } from "@/lib/export-ui/adapters";
+import { resolvePetalOpenUrl } from "@/lib/url/x";
 import { cn, formatPetalTime } from "@/lib/utils";
 import { NoteIcon } from "@/components/ui/design-icons";
 import type { Petal } from "@/lib/types";
@@ -101,12 +103,11 @@ function PlatformThumbnailFallback({ petal }: { petal: Petal }) {
 
   return (
     <div
-      className="flex h-[62px] w-24 shrink-0 flex-col items-center justify-center rounded-[9px] px-1 text-center"
+      className="flex h-[62px] w-24 shrink-0 items-center justify-center rounded-[9px] px-1 text-center"
       style={{ background: bg }}
     >
-      <span className="text-[10px] font-bold text-white/90">{config.name}</span>
-      <span className="mt-0.5 line-clamp-2 text-[9px] leading-tight text-white/75">
-        {petal.title}
+      <span className="text-[10px] font-bold text-white/90">
+        {platformKey === "x" ? "𝕏" : config.name}
       </span>
     </div>
   );
@@ -142,12 +143,12 @@ export function PetalCard({ petal, maxWidth = 340, className }: PetalCardProps) 
   const platform = getPlatformConfig(resolvePetalPlatform(petal));
   const theme = getThemeStyle(petal.theme);
   const time = formatPetalTime(petal.created_at);
-  const isTextOnly = petal.platform === "x" && !petal.preview_url;
   const platformLabel = petal.platform === "x" ? "X (Twitter)" : platform.name;
+  const openUrl = resolvePetalOpenUrl(petal.url, petal.platform);
 
   return (
     <a
-      href={petal.url}
+      href={openUrl}
       target="_blank"
       rel="noopener noreferrer"
       className={cn("block w-full rounded-2xl border bg-white p-[15px] no-underline", className)}
@@ -170,13 +171,13 @@ export function PetalCard({ petal, maxWidth = 340, className }: PetalCardProps) 
       </div>
 
       <div className="flex items-start gap-[13px]">
-        {!isTextOnly && <Thumbnail petal={petal} />}
+        <Thumbnail petal={petal} />
         <div className="min-w-0 flex-1">
           <div
-            className="text-[15px] font-semibold leading-snug"
-            style={{ color: design.colors.text, lineHeight: isTextOnly ? 1.35 : 1.3 }}
+            className="truncate text-[15px] font-semibold leading-snug"
+            style={{ color: design.colors.text, lineHeight: 1.3 }}
           >
-            {isTextOnly ? petal.title : petal.title}
+            {petalDisplayTitle(petal)}
           </div>
           {theme && (
             <span

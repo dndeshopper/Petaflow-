@@ -1,35 +1,15 @@
-import type { Platform } from "@/lib/types";
 import { s } from "@/lib/export-style";
 
 interface PetalTitleDisplayProps {
   title: string;
-  platformId?: Platform;
   fontSize?: number;
 }
 
+/** Single-line truncated title — same layout as YouTube petal cards. */
 export function PetalTitleDisplay({
   title,
-  platformId,
   fontSize = 15,
 }: PetalTitleDisplayProps) {
-  if (platformId === "x") {
-    return (
-      <div
-        style={{
-          fontSize,
-          fontWeight: 600,
-          lineHeight: 1.3,
-          display: "-webkit-box",
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-        }}
-      >
-        {title}
-      </div>
-    );
-  }
-
   return (
     <div
       style={s(

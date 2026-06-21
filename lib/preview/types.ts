@@ -14,6 +14,7 @@ export interface OpenGraphMetadata {
   title?: string;
   image?: string;
   description?: string;
+  url?: string;
 }
 
 export interface PreviewResult {
@@ -21,5 +22,6 @@ export interface PreviewResult {
   preview_url: string | null;
   title?: string;
   description?: string;
+  url?: string;
   source: "opengraph" | "playwright" | "fallback" | "youtube" | "extension";
 }

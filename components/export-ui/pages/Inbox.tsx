@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { s } from "@/lib/export-style";
 import { PageHeader } from "@/components/export-ui/Header";
-import { petalToInboxItem } from "@/lib/export-ui/adapters";
+import { petalToInboxItem, PETAL_CARD_THUMB } from "@/lib/export-ui/adapters";
 import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
 import { PetalTitleDisplay } from "@/components/export-ui/PetalTitleDisplay";
 import { performInboxActionRequest } from "@/lib/inbox/client";
@@ -97,8 +97,8 @@ export function ExportInbox() {
                     thumbBg={it.thumbBg}
                     thumbImageUrl={it.thumbImageUrl}
                     thumbLabel={it.thumbLabel}
-                    width={96}
-                    height={60}
+                    width={PETAL_CARD_THUMB.inbox.width}
+                    height={PETAL_CARD_THUMB.inbox.height}
                   />
                   <div style={s("flex:1; min-width:0;")}>
                     <div style={s("display:flex; align-items:center; gap:8px; margin-bottom:6px;")}>
@@ -107,7 +107,7 @@ export function ExportInbox() {
                       <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
                       <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{it.time}</span>
                     </div>
-                    <PetalTitleDisplay title={it.title} platformId={it.platformId} />
+                    <PetalTitleDisplay title={it.title} />
                     <div style={s("display:flex; align-items:center; gap:7px; margin-top:9px;")}>
                       <span style={s("font-size:12px; color:#a7a5a1;")}>Suggested:</span>
                       <span style={s(`display:flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:${it.tagColor}; background:${it.tagBg}; border-radius:7px; padding:3px 9px;`)}>

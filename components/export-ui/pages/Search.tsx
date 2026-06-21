@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { s } from "@/lib/export-style";
-import { petalToSearchResult } from "@/lib/export-ui/adapters";
+import { petalToSearchResult, PETAL_CARD_THUMB } from "@/lib/export-ui/adapters";
 import { PetalThumb } from "@/components/export-ui/PetalCardLink";
 import { PetalTitleDisplay } from "@/components/export-ui/PetalTitleDisplay";
 import { PETALS_CHANGED_EVENT } from "@/lib/sync-events";
@@ -146,8 +146,8 @@ export function ExportSearch() {
                 thumbBg={r.thumbBg}
                 thumbImageUrl={r.thumbImageUrl}
                 thumbLabel={r.thumbLabel}
-                width={88}
-                height={56}
+                width={PETAL_CARD_THUMB.search.width}
+                height={PETAL_CARD_THUMB.search.height}
               />
               <div style={s("flex:1; min-width:0;")}>
                 <div style={s("display:flex; align-items:center; gap:8px; margin-bottom:5px;")}>
@@ -156,7 +156,7 @@ export function ExportSearch() {
                   <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
                   <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{r.date}</span>
                 </div>
-                <PetalTitleDisplay title={r.title} platformId={r.platformId} />
+                <PetalTitleDisplay title={r.title} />
               </div>
               <span style={s(`font-size:11.5px; font-weight:500; border-radius:6px; padding:3px 8px; color:${r.tagColor}; background:${r.tagBg}; flex:none;`)}>{r.tag}</span>
             </a>

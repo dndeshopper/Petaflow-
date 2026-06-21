@@ -14,6 +14,8 @@ import { getTimeGreeting } from "@/lib/utils";
 import {
   getTodayPetals,
   petalToTimelineItem,
+  petalShowsThumb,
+  PETAL_CARD_THUMB,
   todayOverview,
 } from "@/lib/export-ui/adapters";
 import { getDailyQuote } from "@/lib/demo-data";
@@ -136,25 +138,25 @@ export function ExportDashboard({ stats }: ExportDashboardProps) {
                 const item = petalToTimelineItem(petal);
                 const side = index % 2 === 0 ? "left" : "right";
                 const w = side === "left" ? 330 : 340;
-                const showThumb = item.thumbImageUrl || item.thumbLabel;
+                const showThumb = petalShowsThumb(item);
                 return (
                   <Row key={petal.id} side={side as "left" | "right"} time={item.time}>
                     <CardShell w={w}>
-                      <CardHead name={item.platform} time={item.time} icon={<PlatformIcon platGlyph={item.platGlyph} platBg={item.platBg} />} />
                       <div style={s("display:flex; gap:13px; align-items:flex-start;")}>
                         <PetalCardLink url={item.url} style={{ flex: 1, minWidth: 0 }}>
+                          <CardHead name={item.platform} time={item.time} icon={<PlatformIcon platGlyph={item.platGlyph} platBg={item.platBg} />} />
                           <div style={s("display:flex; gap:13px; align-items:flex-start;")}>
                             {showThumb && (
                               <PetalThumb
                                 thumbBg={item.thumbBg}
                                 thumbImageUrl={item.thumbImageUrl}
                                 thumbLabel={item.thumbLabel}
-                                width={96}
-                                height={62}
+                                width={PETAL_CARD_THUMB.dashboard.width}
+                                height={PETAL_CARD_THUMB.dashboard.height}
                               />
                             )}
                             <div style={s("flex:1; min-width:0;")}>
-                              <PetalTitleDisplay title={item.title} platformId={item.platformId} />
+                              <PetalTitleDisplay title={item.title} />
                               <span style={s(`display:inline-block; margin-top:10px; font-size:12px; color:${item.tagColor}; background:${item.tagBg}; border-radius:7px; padding:4px 9px; font-weight:500;`)}>{item.tag}</span>
                             </div>
                           </div>

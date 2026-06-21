@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { s } from "@/lib/export-style";
 import { PageHeader, SearchBell } from "@/components/export-ui/Header";
 import { usePetals } from "@/components/petals/petals-provider";
-import { buildTimelineDays, buildTimelineFilters } from "@/lib/export-ui/adapters";
+import { buildTimelineDays, buildTimelineFilters, PETAL_CARD_THUMB } from "@/lib/export-ui/adapters";
 import { PetalCardLink, PetalThumb } from "@/components/export-ui/PetalCardLink";
 import { PetalDeleteButton } from "@/components/export-ui/PetalDeleteButton";
 import { PetalTitleDisplay } from "@/components/export-ui/PetalTitleDisplay";
@@ -75,8 +75,8 @@ export function ExportTimeline() {
                             thumbBg={it.thumbBg}
                             thumbImageUrl={it.thumbImageUrl}
                             thumbLabel={it.thumbLabel}
-                            width={80}
-                            height={54}
+                            width={PETAL_CARD_THUMB.timeline.width}
+                            height={PETAL_CARD_THUMB.timeline.height}
                           />
                           <div style={s("flex:1; min-width:0;")}>
                             <div style={s("display:flex; align-items:center; gap:8px; margin-bottom:6px;")}>
@@ -85,7 +85,7 @@ export function ExportTimeline() {
                               <span style={s("width:3px; height:3px; border-radius:50%; background:#cfcdc9; flex:none;")} />
                               <span style={s("font-size:12.5px; color:#a7a5a1; white-space:nowrap;")}>{it.time}</span>
                             </div>
-                            <PetalTitleDisplay title={it.title} platformId={it.platformId} fontSize={14.5} />
+                            <PetalTitleDisplay title={it.title} fontSize={14.5} />
                             <span style={s(`display:inline-block; margin-top:8px; font-size:11.5px; font-weight:500; border-radius:6px; padding:3px 8px; color:${it.tagColor}; background:${it.tagBg};`)}>{it.tag}</span>
                           </div>
                         </div>

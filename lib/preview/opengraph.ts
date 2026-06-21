@@ -43,7 +43,9 @@ export async function extractOpenGraph(
       result.dcDescription
     );
 
-    if (!title && !image && !description) {
+    const canonicalUrl = pickString(result.ogUrl, result.requestUrl);
+
+    if (!title && !image && !description && !canonicalUrl) {
       return { success: false, error: "No Open Graph metadata found" };
     }
 
@@ -51,6 +53,7 @@ export async function extractOpenGraph(
     if (title) data.title = cleanTitle(title);
     if (image) data.image = image;
     if (description) data.description = description;
+    if (canonicalUrl) data.url = canonicalUrl;
 
     return { success: true, data };
   } catch (err) {

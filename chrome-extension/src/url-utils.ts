@@ -64,6 +64,59 @@ export function isYoutubeUrl(url: string): boolean {
   return extractYoutubeVideoId(url) !== null;
 }
 
+const X_HOSTS = new Set(["x.com", "twitter.com", "mobile.x.com", "mobile.twitter.com"]);
+
+export function normalizeXStatusUrl(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname.replace(/^www\./, "");
+    if (!X_HOSTS.has(host)) return null;
+
+    const webStatus = parsed.pathname.match(/^\/i\/web\/status\/(\d+)/);
+    if (webStatus) {
+      return `https://x.com/i/web/status/${webStatus[1]}`;
+    }
+
+    const match = parsed.pathname.match(/^\/([^/?#]+)\/status\/(\d+)/);
+    if (!match) return null;
+
+    const [, user, statusId] = match;
+    if (user === "i") return null;
+
+    return `https://x.com/${user}/status/${statusId}`;
+  } catch {
+    return null;
+  }
+}
+
+export function pickXPostUrl(...candidates: (string | null | undefined)[]): string | null {
+  for (const raw of candidates) {
+    if (!raw) continue;
+    const normalized = normalizeXStatusUrl(raw);
+    if (normalized) return normalized;
+  }
+  return null;
+}
+
+export function pickBestCaptureUrl(...candidates: (string | null | undefined)[]): string | null {
+  const xPost = pickXPostUrl(...candidates);
+  if (xPost) return xPost;
+
+  for (const raw of candidates) {
+    if (!raw) continue;
+    if (!isSavableUrl(raw) || isDirectMediaUrl(raw)) continue;
+    if (isYoutubeUrl(raw)) return normalizeYoutubeUrl(raw);
+    return raw;
+  }
+
+  for (const raw of candidates) {
+    if (!raw || !isSavableUrl(raw)) continue;
+    if (isYoutubeUrl(raw)) return normalizeYoutubeUrl(raw);
+  }
+
+  return null;
+}
+
 /**
  * Pick the best URL to save from context-menu click data.
  * On video players, prefer the page URL over the stream srcUrl.
@@ -74,27 +127,10 @@ export function pickCaptureUrl(options: {
   srcUrl?: string;
   tabUrl?: string;
 }): string | null {
-  const candidates = [
+  return pickBestCaptureUrl(
     options.linkUrl,
     options.pageUrl,
     options.tabUrl,
-    options.srcUrl,
-  ].filter(Boolean) as string[];
-
-  for (const raw of candidates) {
-    if (!isSavableUrl(raw) || isDirectMediaUrl(raw)) continue;
-
-    if (isYoutubeUrl(raw)) {
-      return normalizeYoutubeUrl(raw);
-    }
-
-    return raw;
-  }
-
-  for (const raw of candidates) {
-    if (!isSavableUrl(raw)) continue;
-    if (isYoutubeUrl(raw)) return normalizeYoutubeUrl(raw);
-  }
-
-  return null;
+    options.srcUrl
+  );
 }

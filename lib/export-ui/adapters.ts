@@ -11,6 +11,7 @@ import { getPlatformConfig, resolvePetalPlatform } from "@/lib/platforms";
 import { getTimeGreeting } from "@/lib/utils";
 
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
+import { resolvePetalOpenUrl } from "@/lib/url/x";
 
 const YT = "linear-gradient(135deg,#2a2540,#4a3d6b)";
 const IG = "linear-gradient(135deg,#f9ce5b,#ee583f 45%,#d92e8c 75%,#9b3bc4)";
@@ -142,8 +143,13 @@ function resolveThumbImageUrl(petal: Petal): string | null {
   if (platform === "youtube") {
     return getYoutubeThumbnailUrl(petal.url) ?? petal.preview_url;
   }
+  if (platform === "x") {
+    return petal.preview_url;
+  }
   return petal.preview_url;
 }
+
+export { petalShowsThumb, PETAL_CARD_THUMB } from "@/lib/export-ui/petal-thumb";
 
 function thumbBgFor(petal: Petal): string {
   const platform = resolvePetalPlatform(petal);
@@ -153,12 +159,13 @@ function thumbBgFor(petal: Petal): string {
 function thumbLabel(petal: Petal, hasImage: boolean): string {
   if (hasImage) return "";
   const platform = resolvePetalPlatform(petal);
+  if (platform === "x") return "𝕏";
   if (platform !== "website") return "";
   const words = petal.title.split(/\s+/).slice(0, 2);
   return words.map((w) => w.slice(0, 4).toUpperCase()).join(" ");
 }
 
-const X_TITLE_MAX_LENGTH = 100;
+const X_TITLE_MAX_LENGTH = 72;
 
 /** Strip OG boilerplate from X/Twitter titles for compact card display. */
 function cleanXTitle(raw: string): string {
@@ -237,7 +244,7 @@ export function petalToTimelineItem(petal: Petal): ExportTimelineItem {
   const thumbImageUrl = resolveThumbImageUrl(petal);
   return {
     id: petal.id,
-    url: petal.url,
+    url: resolvePetalOpenUrl(petal.url, platform),
     platform: plat.platform,
     platformId: platform,
     platGlyph: plat.platGlyph,

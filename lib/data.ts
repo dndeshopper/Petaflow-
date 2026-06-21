@@ -24,6 +24,9 @@ import type {
 import { detectPlatform, resolvePetalPlatform } from "@/lib/platforms";
 import { scheduleWeakTitleBackfill } from "@/lib/title/backfill";
 import { scheduleYoutubePreviewBackfill } from "@/lib/preview/youtube-backfill";
+import { scheduleXPreviewBackfill } from "@/lib/preview/x-backfill";
+import { scheduleXUrlBackfill } from "@/lib/preview/x-url-backfill";
+import { normalizeXStatusUrl } from "@/lib/url/x";
 import { cleanTitle, isWeakTitle, resolvePetalTitle } from "@/lib/title/resolve";
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
@@ -90,6 +93,8 @@ export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
     const petals = getDemoPetals();
     scheduleWeakTitleBackfill(petals);
     scheduleYoutubePreviewBackfill(petals);
+    scheduleXPreviewBackfill(petals);
+    scheduleXUrlBackfill(petals);
     return petals;
   }
 
@@ -131,6 +136,8 @@ export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
 
   scheduleWeakTitleBackfill(petals);
   scheduleYoutubePreviewBackfill(petals);
+  scheduleXPreviewBackfill(petals);
+  scheduleXUrlBackfill(petals);
 
   return petals;
 }
@@ -140,18 +147,20 @@ export async function createPetal(
   ctx?: DataContext
 ): Promise<Petal> {
   const platform = input.platform ?? detectPlatform(input.url);
+  const url =
+    platform === "x" ? (normalizeXStatusUrl(input.url) ?? input.url) : input.url;
   const youtubeThumb =
-    platform === "youtube" ? getYoutubeThumbnailUrl(input.url) : null;
+    platform === "youtube" ? getYoutubeThumbnailUrl(url) : null;
 
   let title = input.title?.trim();
   if (title) {
     title = cleanTitle(title, platform);
   }
 
-  if (!title || isWeakTitle(title, input.url, platform)) {
+  if (!title || isWeakTitle(title, url, platform)) {
     try {
       title = await resolvePetalTitle({
-        url: input.url,
+        url,
         platform,
         currentTitle: title,
       });
@@ -159,9 +168,9 @@ export async function createPetal(
       console.warn("[createPetal] Title resolve failed:", err);
       if (!title) {
         try {
-          title = new URL(input.url).hostname;
+          title = new URL(url).hostname;
         } catch {
-          title = input.url;
+          title = url;
         }
       }
     }
@@ -170,7 +179,7 @@ export async function createPetal(
   if (!isSupabaseConfigured()) {
     return addDemoPetal({
       user_id: ctx?.userId ?? DEMO_USER.id,
-      url: input.url,
+      url,
       title,
       note: input.note ?? null,
       platform,
@@ -191,7 +200,7 @@ export async function createPetal(
     .from("petals")
     .insert({
       user_id: userId,
-      url: input.url,
+      url,
       title,
       note: input.note ?? null,
       platform,

@@ -1,6 +1,6 @@
 import { createPetal, PetalApiError, uploadPetalScreenshot } from "./api";
 import { getSettings } from "./storage";
-import { pickCaptureUrl, isSavableUrl, extractYoutubeVideoId } from "./url-utils";
+import { pickCaptureUrl, isSavableUrl, extractYoutubeVideoId, pickBestCaptureUrl } from "./url-utils";
 import { resolveTitleBeforeSave } from "./title-utils";
 import {
   MESSAGE,
@@ -79,7 +79,7 @@ async function resolveCapture(
     if (fromContent) {
       return {
         ...fromContent,
-        url,
+        url: pickBestCaptureUrl(fromContent.url, url) ?? fromContent.url ?? url,
         title: fromContent.title?.trim() || tab.title || url,
         selectionText:
           info.selectionText?.trim() || fromContent.selectionText,
@@ -99,7 +99,10 @@ async function resolveCaptureFromTab(
   if (tab.id != null) {
     const fromContent = await captureFromTab(tab.id, { linkUrl: url });
     if (fromContent) {
-      return { ...fromContent, url };
+      return {
+        ...fromContent,
+        url: pickBestCaptureUrl(fromContent.url, url) ?? fromContent.url ?? url,
+      };
     }
   }
 

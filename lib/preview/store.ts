@@ -6,6 +6,7 @@ import {
 import type { PreviewResult } from "./types";
 import type { Platform, PreviewStatus } from "@/lib/types";
 import { pickBetterTitle, resolvePetalTitle, isWeakTitle } from "@/lib/title/resolve";
+import { isXStatusUrl, normalizeXStatusUrl } from "@/lib/url/x";
 
 export async function getPetalPreviewState(
   petalId: string
@@ -94,6 +95,13 @@ export async function savePreviewResult(
 
   if (resolvedTitle) {
     petalUpdate.title = resolvedTitle;
+  }
+
+  if (result.url && existing?.platform === "x") {
+    const next = normalizeXStatusUrl(result.url) ?? result.url;
+    if (isXStatusUrl(next) && !isXStatusUrl(existing.url)) {
+      petalUpdate.url = next;
+    }
   }
 
   const { error: petalError } = await supabase

@@ -2,8 +2,20 @@ import { MESSAGE, type CapturePageMessage, type PageCapture } from "./types";
 import {
   extractYoutubeVideoId,
   normalizeYoutubeUrl,
-  pickCaptureUrl,
+  normalizeXStatusUrl,
+  pickBestCaptureUrl,
+  pickXPostUrl,
 } from "./url-utils";
+
+let lastContextTarget: Element | null = null;
+
+document.addEventListener(
+  "contextmenu",
+  (event) => {
+    lastContextTarget = event.target instanceof Element ? event.target : null;
+  },
+  true
+);
 
 function getYouTubeTitle(): string | null {
   const selectors = [
@@ -29,6 +41,53 @@ function getYouTubeWatchUrl(): string | null {
   const id = extractYoutubeVideoId(window.location.href);
   if (!id) return null;
   return normalizeYoutubeUrl(`https://www.youtube.com/watch?v=${id}`);
+}
+
+function findXStatusUrlInTree(start: Element): string | null {
+  let el: Element | null = start;
+
+  while (el && el !== document.body) {
+    if (el.tagName === "ARTICLE" || el.getAttribute("data-testid") === "tweet") {
+      const link = el.querySelector('a[href*="/status/"]');
+      if (link instanceof HTMLAnchorElement) {
+        const normalized = normalizeXStatusUrl(link.href);
+        if (normalized) return normalized;
+      }
+    }
+    el = el.parentElement;
+  }
+
+  el = start;
+  while (el && el !== document.body) {
+    const links = el.querySelectorAll('a[href*="/status/"]');
+    for (const link of links) {
+      if (link instanceof HTMLAnchorElement) {
+        const normalized = normalizeXStatusUrl(link.href);
+        if (normalized) return normalized;
+      }
+    }
+    el = el.parentElement;
+  }
+
+  return null;
+}
+
+function getXPostUrl(linkUrl?: string): string | null {
+  return pickXPostUrl(
+    linkUrl,
+    window.location.href,
+    lastContextTarget ? findXStatusUrlInTree(lastContextTarget) : null
+  );
+}
+
+function isXPage(): boolean {
+  const host = window.location.hostname.replace(/^www\./, "");
+  return (
+    host === "x.com" ||
+    host === "twitter.com" ||
+    host === "mobile.x.com" ||
+    host === "mobile.twitter.com"
+  );
 }
 
 function getPageTitle(linkUrl?: string): string {
@@ -62,10 +121,15 @@ function getPageTitle(linkUrl?: string): string {
 }
 
 function getPageUrl(linkUrl?: string): string {
+  if (isXPage()) {
+    const xPost = getXPostUrl(linkUrl);
+    if (xPost) return xPost;
+  }
+
   const candidates = [linkUrl, getYouTubeWatchUrl(), window.location.href];
   for (const raw of candidates) {
     if (!raw) continue;
-    const picked = pickCaptureUrl({ linkUrl: raw, pageUrl: window.location.href });
+    const picked = pickBestCaptureUrl(raw, window.location.href);
     if (picked) return picked;
   }
   return window.location.href;
