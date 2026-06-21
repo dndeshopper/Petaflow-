@@ -1,12 +1,15 @@
 import { MESSAGE, type CapturePageMessage, type PageCapture } from "./types";
 import {
-  extractYoutubeVideoId,
   isFacebookHost,
+  isGenericFacebookUrl,
   normalizeFacebookPostUrl,
+  pickFacebookPostUrl,
+} from "./facebook-url";
+import {
+  extractYoutubeVideoId,
   normalizeYoutubeUrl,
   normalizeXStatusUrl,
   pickBestCaptureUrl,
-  pickFacebookPostUrl,
   pickXPostUrl,
 } from "./url-utils";
 
@@ -46,17 +49,81 @@ function getYouTubeWatchUrl(): string | null {
   return normalizeYoutubeUrl(`https://www.youtube.com/watch?v=${id}`);
 }
 
-function findPostLinkIn(root: Element, hrefNeedle: string): string | null {
-  const links = root.querySelectorAll(`a[href*="${hrefNeedle}"]`);
-  for (const link of links) {
+function scoreFacebookLink(link: HTMLAnchorElement, url: string): number {
+  let score = 0;
+  if (url.includes("/posts/")) score += 12;
+  if (url.includes("pfbid")) score += 8;
+  if (url.includes("/permalink/")) score += 11;
+  if (url.includes("permalink.php")) score += 10;
+  if (url.includes("/reel/")) score += 9;
+  if (url.includes("/watch/?v=")) score += 8;
+  if (url.includes("/photo/")) score += 4;
+
+  const text = (link.textContent ?? "").trim();
+  if (/^\d+\s*(min|h|g|d|w|m|ore|sec|s)?/i.test(text)) score += 14;
+  if (/\d{1,2}:\d{2}/.test(text)) score += 12;
+  if (link.getAttribute("aria-label")?.match(/\d{4}/)) score += 6;
+
+  return score;
+}
+
+function findBestFacebookLinkIn(root: Element): string | null {
+  let best: string | null = null;
+  let bestScore = -1;
+
+  for (const link of root.querySelectorAll("a[href]")) {
     if (!(link instanceof HTMLAnchorElement)) continue;
-    const href = link.href;
-    const normalized =
-      hrefNeedle === "/status/"
-        ? normalizeXStatusUrl(href)
-        : normalizeFacebookPostUrl(href);
+    const normalized = normalizeFacebookPostUrl(link.href);
+    if (!normalized) continue;
+    const score = scoreFacebookLink(link, normalized);
+    if (score > bestScore) {
+      bestScore = score;
+      best = normalized;
+    }
+  }
+
+  return best;
+}
+
+function findFacebookPostUrlInTree(start: Element): string | null {
+  let container: Element | null = start;
+
+  while (container && container !== document.body) {
+    if (
+      container.getAttribute("role") === "article" ||
+      /FeedUnit/i.test(container.getAttribute("data-pagelet") ?? "")
+    ) {
+      const found = findBestFacebookLinkIn(container);
+      if (found) return found;
+    }
+    container = container.parentElement;
+  }
+
+  container = start;
+  let depth = 0;
+  while (container && container !== document.body && depth < 12) {
+    const found = findBestFacebookLinkIn(container);
+    if (found) return found;
+    container = container.parentElement;
+    depth += 1;
+  }
+
+  return null;
+}
+
+function getFacebookOgPostUrl(): string | null {
+  const ogUrl = document.querySelector('meta[property="og:url"]');
+  if (ogUrl instanceof HTMLMetaElement && ogUrl.content) {
+    const normalized = normalizeFacebookPostUrl(ogUrl.content);
     if (normalized) return normalized;
   }
+
+  const canonical = document.querySelector('link[rel="canonical"]');
+  if (canonical instanceof HTMLLinkElement && canonical.href) {
+    const normalized = normalizeFacebookPostUrl(canonical.href);
+    if (normalized) return normalized;
+  }
+
   return null;
 }
 
@@ -69,31 +136,10 @@ function findXStatusUrlInTree(start: Element): string | null {
       el.getAttribute("data-testid") === "tweet" ||
       el.getAttribute("data-testid") === "cellInnerDiv"
     ) {
-      const fromStatus = findPostLinkIn(el, "/status/");
-      if (fromStatus) return fromStatus;
-    }
-    el = el.parentElement;
-  }
-
-  el = start;
-  while (el && el !== document.body) {
-    const fromStatus = findPostLinkIn(el, "/status/");
-    if (fromStatus) return fromStatus;
-    el = el.parentElement;
-  }
-
-  return null;
-}
-
-function findFacebookPostUrlInTree(start: Element): string | null {
-  const needles = ["/posts/", "permalink.php", "/photo", "/reel/", "/watch", "story.php"];
-
-  let el: Element | null = start;
-  while (el && el !== document.body) {
-    if (el.getAttribute("role") === "article") {
-      for (const needle of needles) {
-        const found = findPostLinkIn(el, needle);
-        if (found) return found;
+      for (const link of el.querySelectorAll('a[href*="/status/"]')) {
+        if (!(link instanceof HTMLAnchorElement)) continue;
+        const normalized = normalizeXStatusUrl(link.href);
+        if (normalized) return normalized;
       }
     }
     el = el.parentElement;
@@ -101,9 +147,10 @@ function findFacebookPostUrlInTree(start: Element): string | null {
 
   el = start;
   while (el && el !== document.body) {
-    for (const needle of needles) {
-      const found = findPostLinkIn(el, needle);
-      if (found) return found;
+    for (const link of el.querySelectorAll('a[href*="/status/"]')) {
+      if (!(link instanceof HTMLAnchorElement)) continue;
+      const normalized = normalizeXStatusUrl(link.href);
+      if (normalized) return normalized;
     }
     el = el.parentElement;
   }
@@ -120,10 +167,14 @@ function getXPostUrl(linkUrl?: string): string | null {
 }
 
 function getFacebookPostUrl(linkUrl?: string): string | null {
+  const fromDom = lastContextTarget ? findFacebookPostUrlInTree(lastContextTarget) : null;
+  const fromOg = getFacebookOgPostUrl();
+
   return pickFacebookPostUrl(
     linkUrl,
-    window.location.href,
-    lastContextTarget ? findFacebookPostUrlInTree(lastContextTarget) : null
+    fromDom,
+    fromOg,
+    window.location.href
   );
 }
 
@@ -173,7 +224,7 @@ function getPageUrl(linkUrl?: string): string {
     if (xPost) return xPost;
   }
 
-  if (isFacebookHost(window.location.href)) {
+  if (isFacebookHost(window.location.href) || (linkUrl && isFacebookHost(linkUrl))) {
     const fbPost = getFacebookPostUrl(linkUrl);
     if (fbPost) return fbPost;
   }
@@ -182,8 +233,20 @@ function getPageUrl(linkUrl?: string): string {
   for (const raw of candidates) {
     if (!raw) continue;
     const picked = pickBestCaptureUrl(raw, window.location.href);
-    if (picked) return picked;
+    if (picked) {
+      if (isFacebookHost(picked) && isGenericFacebookUrl(picked)) {
+        const fbPost = getFacebookPostUrl(linkUrl);
+        if (fbPost) return fbPost;
+      }
+      return picked;
+    }
   }
+
+  if (isFacebookHost(window.location.href)) {
+    const fbPost = getFacebookPostUrl(linkUrl);
+    if (fbPost) return fbPost;
+  }
+
   return window.location.href;
 }
 

@@ -6,11 +6,16 @@ import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 import { isInternalApiRequest } from "@/lib/petals/resolve-user";
 import { uploadPreviewScreenshot } from "@/lib/storage/preview-upload";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
+import { isFacebookPostUrl } from "@/lib/url/facebook";
+import { normalizePetalSaveUrl } from "@/lib/url/petal-url";
+import { isXStatusUrl } from "@/lib/url/x";
+import type { Platform } from "@/lib/types";
 
 const uploadSchema = z.object({
   image: z.string().min(32),
   title: z.string().optional(),
   description: z.string().optional(),
+  url: z.string().url().optional(),
 });
 
 /**
@@ -53,6 +58,7 @@ export async function POST(
 
     let previewUrl: string | null = null;
     let source: "extension" | "youtube" = "extension";
+    let existingPetal: { url: string; platform: string } | null = null;
 
     if (isSupabaseConfigured()) {
       const { createServiceClient } = await import("@/lib/supabase/server");
@@ -63,6 +69,7 @@ export async function POST(
         .eq("id", petalId)
         .maybeSingle();
 
+      existingPetal = petal;
       const youtubeThumb = petal ? getYoutubeThumbnailUrl(petal.url) : null;
       if (youtubeThumb) {
         previewUrl = youtubeThumb;
@@ -78,13 +85,38 @@ export async function POST(
       previewUrl = uploaded.publicUrl;
     }
 
+    const resolvedUploadUrl = parsed.data.url
+      ? normalizePetalSaveUrl(parsed.data.url, existingPetal?.platform as Platform | undefined)
+      : null;
+
     await savePreviewResult(petalId, {
       status: "completed",
       preview_url: previewUrl,
       title: parsed.data.title,
       description: parsed.data.description,
+      url: resolvedUploadUrl ?? undefined,
       source,
     });
+
+    if (
+      isSupabaseConfigured() &&
+      existingPetal &&
+      resolvedUploadUrl &&
+      resolvedUploadUrl !== existingPetal.url
+    ) {
+      const hasPostLink =
+        isXStatusUrl(resolvedUploadUrl) || isFacebookPostUrl(resolvedUploadUrl);
+      const hadPostLink =
+        isXStatusUrl(existingPetal.url) || isFacebookPostUrl(existingPetal.url);
+      if (hasPostLink && !hadPostLink) {
+        const { createServiceClient } = await import("@/lib/supabase/server");
+        const supabase = await createServiceClient();
+        await supabase
+          .from("petals")
+          .update({ url: resolvedUploadUrl })
+          .eq("id", petalId);
+      }
+    }
 
     return NextResponse.json({
       success: true,

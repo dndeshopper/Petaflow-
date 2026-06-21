@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PetalFlow",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Save now. Watch later. Never lose a valuable idea again.",
   "permissions": ["contextMenus", "notifications", "storage", "activeTab", "tabs"],
   "host_permissions": ["<all_urls>"],

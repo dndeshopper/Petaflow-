@@ -7,6 +7,20 @@ const FB_HOSTS = new Set([
   "fb.me",
 ]);
 
+const FB_SKIP_FIRST_SEGMENTS = new Set([
+  "photo",
+  "watch",
+  "reel",
+  "videos",
+  "groups",
+  "people",
+  "events",
+  "marketplace",
+  "gaming",
+  "login",
+  "share",
+]);
+
 export function isFacebookHost(url: string): boolean {
   try {
     const host = new URL(url).hostname.replace(/^www\./, "").toLowerCase();
@@ -16,10 +30,48 @@ export function isFacebookHost(url: string): boolean {
   }
 }
 
+/** Unwrap l.facebook.com / lm.facebook.com redirect wrappers. */
+export function unwrapFacebookRedirectUrl(url: string): string {
+  try {
+    let current = url;
+    for (let i = 0; i < 4; i++) {
+      const parsed = new URL(current);
+      const host = parsed.hostname.replace(/^www\./, "").toLowerCase();
+      if (host === "l.facebook.com" || host === "lm.facebook.com") {
+        const next = parsed.searchParams.get("u");
+        if (!next) break;
+        current = decodeURIComponent(next);
+        continue;
+      }
+      break;
+    }
+    return current;
+  } catch {
+    return url;
+  }
+}
+
+/** True for feed/home URLs that are not a specific post permalink. */
+export function isGenericFacebookUrl(url: string): boolean {
+  if (!isFacebookHost(url)) return false;
+  if (isFacebookPostUrl(url)) return false;
+
+  try {
+    const parsed = new URL(unwrapFacebookRedirectUrl(url));
+    const path = parsed.pathname.replace(/\/$/, "") || "/";
+    if (path === "/" || path === "/home.php" || path === "/index.php") return true;
+    if (path === "/watch" && !parsed.searchParams.get("v")) return true;
+    return !normalizeFacebookPostUrl(url);
+  } catch {
+    return true;
+  }
+}
+
 /** Canonical permalink for a Facebook post, reel, video, or photo — or null. */
 export function normalizeFacebookPostUrl(url: string): string | null {
   try {
-    const parsed = new URL(url);
+    const unwrapped = unwrapFacebookRedirectUrl(url);
+    const parsed = new URL(unwrapped);
     if (!isFacebookHost(parsed.href)) return null;
 
     if (parsed.hostname.replace(/^www\./, "") === "fb.watch") {
@@ -29,17 +81,24 @@ export function normalizeFacebookPostUrl(url: string): string | null {
     const canonicalHost = "www.facebook.com";
     const path = parsed.pathname;
 
+    const groupPermalink = path.match(/^\/groups\/([^/]+)\/permalink\/([^/?#]+)/);
+    if (groupPermalink) {
+      return `https://${canonicalHost}/groups/${groupPermalink[1]}/permalink/${groupPermalink[2]}/`;
+    }
+
     const groupPost = path.match(/^\/groups\/([^/]+)\/posts\/([^/?#]+)/);
     if (groupPost) {
       return `https://${canonicalHost}/groups/${groupPost[1]}/posts/${groupPost[2]}`;
     }
 
     const postsMatch = path.match(/^\/([^/]+)\/posts\/([^/?#]+)/);
-    if (
-      postsMatch &&
-      !["photo", "watch", "reel", "videos", "groups"].includes(postsMatch[1])
-    ) {
+    if (postsMatch && !FB_SKIP_FIRST_SEGMENTS.has(postsMatch[1])) {
       return `https://${canonicalHost}/${postsMatch[1]}/posts/${postsMatch[2]}`;
+    }
+
+    const peoplePost = path.match(/^(\/people\/[^/]+\/[^/]+)\/posts\/([^/?#]+)/);
+    if (peoplePost) {
+      return `https://${canonicalHost}${peoplePost[1]}/posts/${peoplePost[2]}`;
     }
 
     const reel = path.match(/^\/reel\/([^/?#]+)/);
@@ -60,7 +119,7 @@ export function normalizeFacebookPostUrl(url: string): string | null {
       return `https://${canonicalHost}/videos/${videosRoot[1]}`;
     }
 
-    if (path.endsWith("permalink.php") || path.includes("permalink.php")) {
+    if (path.includes("permalink.php")) {
       const storyFbid = parsed.searchParams.get("story_fbid");
       const id = parsed.searchParams.get("id");
       if (storyFbid && id) {
@@ -79,9 +138,9 @@ export function normalizeFacebookPostUrl(url: string): string | null {
     }
 
     const fbid = parsed.searchParams.get("fbid");
-    if (fbid && (path.includes("photo") || path.endsWith("photo.php"))) {
-      const set = parsed.searchParams.get("set");
+    if (fbid && path.includes("photo")) {
       const params = new URLSearchParams({ fbid });
+      const set = parsed.searchParams.get("set");
       if (set) params.set("set", set);
       return `https://${canonicalHost}/photo/?${params.toString()}`;
     }

@@ -71,7 +71,7 @@ export async function uploadPetalScreenshot(
   settings: ExtensionSettings,
   petalId: string,
   imageDataUrl: string,
-  meta?: { title?: string; description?: string }
+  meta?: { title?: string; description?: string; url?: string }
 ): Promise<void> {
   const baseUrl = settings.apiUrl.replace(/\/$/, "");
 
@@ -82,6 +82,7 @@ export async function uploadPetalScreenshot(
       image: imageDataUrl,
       title: meta?.title,
       description: meta?.description,
+      url: meta?.url,
     }),
   });
 

@@ -139,8 +139,25 @@ async function savePetalWithScreenshot(
   tab?: chrome.tabs.Tab
 ): Promise<void> {
   const settings = await getSettings();
-  const title = await resolveTitleBeforeSave(capture.url, capture.title);
-  const resolvedCapture = { ...capture, title };
+  let resolvedCapture = capture;
+
+  if (tab?.id != null) {
+    const fresh = await captureFromTab(tab.id, {
+      linkUrl: capture.url,
+      selectionText: capture.selectionText,
+    });
+    if (fresh) {
+      resolvedCapture = {
+        ...capture,
+        url: pickBestCaptureUrl(fresh.url, capture.url) ?? fresh.url ?? capture.url,
+        title: fresh.title?.trim() || capture.title,
+        selectionText: fresh.selectionText ?? capture.selectionText,
+      };
+    }
+  }
+
+  const title = await resolveTitleBeforeSave(resolvedCapture.url, resolvedCapture.title);
+  resolvedCapture = { ...resolvedCapture, title };
 
   const { id } = await createPetal(settings, {
     url: resolvedCapture.url,
@@ -155,6 +172,7 @@ async function savePetalWithScreenshot(
       try {
         await uploadPetalScreenshot(settings, id, screenshot, {
           title: resolvedCapture.title,
+          url: resolvedCapture.url,
         });
       } catch (err) {
         console.warn("[PetalFlow] Preview upload failed:", err);
