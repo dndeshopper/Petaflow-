@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { decodeDataUrlImage } from "@/lib/preview/decode-image";
 import { savePreviewResult } from "@/lib/preview/store";
+import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 import { isInternalApiRequest } from "@/lib/petals/resolve-user";
 import { uploadPreviewScreenshot } from "@/lib/storage/preview-upload";
+import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 const uploadSchema = z.object({
   image: z.string().min(32),
@@ -49,22 +51,44 @@ export async function POST(
       );
     }
 
-    const uploaded = await uploadPreviewScreenshot(petalId, decoded.buffer, {
-      suffix: "extension",
-      contentType: decoded.contentType,
-    });
+    let previewUrl: string | null = null;
+    let source: "extension" | "youtube" = "extension";
+
+    if (isSupabaseConfigured()) {
+      const { createServiceClient } = await import("@/lib/supabase/server");
+      const supabase = await createServiceClient();
+      const { data: petal } = await supabase
+        .from("petals")
+        .select("url, platform")
+        .eq("id", petalId)
+        .maybeSingle();
+
+      const youtubeThumb = petal ? getYoutubeThumbnailUrl(petal.url) : null;
+      if (youtubeThumb) {
+        previewUrl = youtubeThumb;
+        source = "youtube";
+      }
+    }
+
+    if (!previewUrl) {
+      const uploaded = await uploadPreviewScreenshot(petalId, decoded.buffer, {
+        suffix: "extension",
+        contentType: decoded.contentType,
+      });
+      previewUrl = uploaded.publicUrl;
+    }
 
     await savePreviewResult(petalId, {
       status: "completed",
-      preview_url: uploaded.publicUrl,
+      preview_url: previewUrl,
       title: parsed.data.title,
       description: parsed.data.description,
-      source: "extension",
+      source,
     });
 
     return NextResponse.json({
       success: true,
-      preview_url: uploaded.publicUrl,
+      preview_url: previewUrl,
     });
   } catch (err) {
     console.error("[POST /api/petals/[id]/preview/upload]", err);

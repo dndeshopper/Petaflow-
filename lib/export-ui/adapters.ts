@@ -138,9 +138,11 @@ function petalRelative(petal: Petal): string {
 }
 
 function resolveThumbImageUrl(petal: Petal): string | null {
-  if (petal.preview_url) return petal.preview_url;
-  if (petal.platform === "youtube") return getYoutubeThumbnailUrl(petal.url);
-  return null;
+  const platform = resolvePetalPlatform(petal);
+  if (platform === "youtube") {
+    return getYoutubeThumbnailUrl(petal.url) ?? petal.preview_url;
+  }
+  return petal.preview_url;
 }
 
 function thumbBgFor(petal: Petal): string {

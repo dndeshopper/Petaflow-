@@ -23,6 +23,7 @@ import type {
 } from "@/lib/types";
 import { detectPlatform, resolvePetalPlatform } from "@/lib/platforms";
 import { scheduleWeakTitleBackfill } from "@/lib/title/backfill";
+import { scheduleYoutubePreviewBackfill } from "@/lib/preview/youtube-backfill";
 import { cleanTitle, isWeakTitle, resolvePetalTitle } from "@/lib/title/resolve";
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
@@ -88,6 +89,7 @@ export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
   if (!isSupabaseConfigured()) {
     const petals = getDemoPetals();
     scheduleWeakTitleBackfill(petals);
+    scheduleYoutubePreviewBackfill(petals);
     return petals;
   }
 
@@ -128,6 +130,7 @@ export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
   }
 
   scheduleWeakTitleBackfill(petals);
+  scheduleYoutubePreviewBackfill(petals);
 
   return petals;
 }

@@ -3,6 +3,7 @@ import { closeBrowser } from "@/lib/playwright/browser";
 import { generatePreview } from "./engine";
 import { generateAndStoreFallbackCard } from "./generate-fallback";
 import { isStoredPreviewUrl } from "./preview-url";
+import { isYoutubeClassicThumbnailUrl } from "./youtube";
 import {
   markPreviewFailed,
   markPreviewProcessing,
@@ -135,8 +136,11 @@ async function drainQueue(): Promise<void> {
 export async function processPreviewJob(job: PreviewJob): Promise<void> {
   const existing = await getPetalPreviewState(job.petalId);
   const preserveExistingPreview =
-    isStoredPreviewUrl(existing?.preview_url) &&
-    existing?.preview_status === "completed";
+    Boolean(existing?.preview_url) &&
+    existing?.preview_status === "completed" &&
+    (job.platform === "youtube"
+      ? isYoutubeClassicThumbnailUrl(existing.preview_url, job.url)
+      : isStoredPreviewUrl(existing.preview_url));
 
   await markPreviewProcessing(job.petalId);
   const result = await generatePreview({

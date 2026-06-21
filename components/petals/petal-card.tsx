@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { design, getThemeStyle } from "@/lib/design-tokens";
 import { getPlatformConfig, resolvePetalPlatform } from "@/lib/platforms";
+import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 import { cn, formatPetalTime } from "@/lib/utils";
 import { NoteIcon } from "@/components/ui/design-icons";
 import type { Petal } from "@/lib/types";
@@ -113,12 +114,17 @@ function PlatformThumbnailFallback({ petal }: { petal: Petal }) {
 
 function Thumbnail({ petal }: { petal: Petal }) {
   const [imgError, setImgError] = useState(false);
+  const platform = resolvePetalPlatform(petal);
+  const imageUrl =
+    platform === "youtube"
+      ? getYoutubeThumbnailUrl(petal.url) ?? petal.preview_url
+      : petal.preview_url;
 
-  if (petal.preview_url && !imgError) {
+  if (imageUrl && !imgError) {
     return (
       <div className="relative h-[62px] w-24 shrink-0 overflow-hidden rounded-[9px]">
         <Image
-          src={petal.preview_url}
+          src={imageUrl}
           alt=""
           fill
           className="object-cover"

@@ -8,14 +8,30 @@ import {
   uploadPreviewScreenshot,
 } from "@/lib/storage/preview-upload";
 import { generateAndStoreFallbackCard } from "./generate-fallback";
-import { getYoutubeThumbnailUrl } from "./youtube";
+import { getYoutubeThumbnailUrl, isYoutubeClassicThumbnailUrl } from "./youtube";
 import { pickBetterTitle, resolvePetalTitle } from "@/lib/title/resolve";
 
+async function buildYoutubePreviewResult(
+  job: PreviewJob,
+  ogDescription: string | undefined,
+  finalizeTitle: (extra?: string | null) => Promise<string>
+): Promise<PreviewResult | null> {
+  const ytThumb = getYoutubeThumbnailUrl(job.url);
+  if (!ytThumb) return null;
+
+  return {
+    status: "completed",
+    preview_url: ytThumb,
+    title: await finalizeTitle(),
+    description: ogDescription,
+    source: "youtube",
+  };
+}
+
 /**
- * Preview pipeline (screenshot-first for all platforms):
- * 1. Playwright / serverless Chromium screenshot → Supabase Storage
- * 2. YouTube thumbnail or OpenGraph image
- * 3. Branded fallback card
+ * Preview pipeline:
+ * - YouTube: always use the classic video thumbnail (img.youtube.com)
+ * - Other platforms: screenshot → OpenGraph → fallback card
  *
  * OpenGraph is always used to enrich title/description when available.
  */
@@ -34,7 +50,23 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
     });
   }
 
-  if (job.preserveExistingPreview && job.existingPreviewUrl) {
+  if (job.platform === "youtube") {
+    const youtubeResult = await buildYoutubePreviewResult(
+      job,
+      ogDescription,
+      finalizeTitle
+    );
+    if (youtubeResult) return youtubeResult;
+  }
+
+  const preserveExtensionPreview =
+    job.preserveExistingPreview &&
+    job.existingPreviewUrl &&
+    (job.platform === "youtube"
+      ? isYoutubeClassicThumbnailUrl(job.existingPreviewUrl, job.url)
+      : true);
+
+  if (preserveExtensionPreview && job.existingPreviewUrl) {
     return {
       status: "completed",
       preview_url: job.existingPreviewUrl,

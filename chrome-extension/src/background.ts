@@ -1,6 +1,6 @@
 import { createPetal, PetalApiError, uploadPetalScreenshot } from "./api";
 import { getSettings } from "./storage";
-import { pickCaptureUrl, isSavableUrl } from "./url-utils";
+import { pickCaptureUrl, isSavableUrl, extractYoutubeVideoId } from "./url-utils";
 import { resolveTitleBeforeSave } from "./title-utils";
 import {
   MESSAGE,
@@ -146,7 +146,7 @@ async function savePetalWithScreenshot(
     captured_at: resolvedCapture.captured_at,
   });
 
-  if (tab) {
+  if (tab && !extractYoutubeVideoId(resolvedCapture.url)) {
     const screenshot = await captureVisibleTabScreenshot(tab);
     if (screenshot) {
       try {

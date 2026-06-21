@@ -263,6 +263,14 @@ export function updateDemoPetalTitle(petalId: string, title: string): void {
   );
 }
 
+export function updateDemoPetalPreview(petalId: string, previewUrl: string): void {
+  demoPetals = demoPetals.map((p) =>
+    p.id === petalId
+      ? { ...p, preview_url: previewUrl, preview_status: "completed" as const }
+      : p
+  );
+}
+
 export function saveDemoPreviewResult(
   petalId: string,
   result: {

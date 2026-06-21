@@ -33,8 +33,30 @@ export function extractYoutubeVideoId(url: string): string | null {
   return fallback?.[1] ?? null;
 }
 
+const YOUTUBE_THUMB_HOST = "img.youtube.com";
+
+/** Classic YouTube video thumbnail (480×360, always available). */
 export function getYoutubeThumbnailUrl(url: string): string | null {
   const id = extractYoutubeVideoId(url);
   if (!id) return null;
-  return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
+  return `https://${YOUTUBE_THUMB_HOST}/vi/${id}/hqdefault.jpg`;
+}
+
+export function isYoutubeClassicThumbnailUrl(
+  previewUrl: string | null | undefined,
+  videoUrl?: string
+): boolean {
+  if (!previewUrl?.includes(YOUTUBE_THUMB_HOST)) return false;
+  if (!videoUrl) return true;
+  const id = extractYoutubeVideoId(videoUrl);
+  return id ? previewUrl.includes(`/vi/${id}/`) : true;
+}
+
+export function youtubePreviewNeedsFix(
+  videoUrl: string,
+  previewUrl: string | null | undefined
+): boolean {
+  const classic = getYoutubeThumbnailUrl(videoUrl);
+  if (!classic) return false;
+  return !isYoutubeClassicThumbnailUrl(previewUrl, videoUrl);
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { s } from "@/lib/export-style";
+import PetalFlowLogo from "@/components/PetalFlowLogo";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { useInbox } from "@/components/inbox/inbox-provider";
 import type { UserProfile } from "@/lib/types";
@@ -96,7 +97,7 @@ export function ExportSidebar({ user }: ExportSidebarProps) {
   return (
     <aside style={s("width:264px; flex:none; border-right:1px solid #ececea; padding:30px 22px 24px; display:flex; flex-direction:column;")}>
       <div style={s("padding:0 8px; margin-bottom:38px;")}>
-        <img src="/petalflow-logo.png" alt="PetalFlow" style={s("width:112px; height:auto; display:block;")} />
+        <PetalFlowLogo size={48} />
       </div>
 
       <nav style={s("display:flex; flex-direction:column; gap:3px;")}>
