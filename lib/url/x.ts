@@ -47,9 +47,4 @@ export function pickXPostUrl(...candidates: (string | null | undefined)[]): stri
   return null;
 }
 
-export function resolvePetalOpenUrl(url: string, platform?: string): string {
-  if (platform === "x" || isXHost(url)) {
-    return pickXPostUrl(url) ?? url;
-  }
-  return url;
-}
+export { resolvePetalOpenUrl, normalizePetalSaveUrl } from "@/lib/url/petal-url";

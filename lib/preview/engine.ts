@@ -10,20 +10,38 @@ import {
 import { generateAndStoreFallbackCard } from "./generate-fallback";
 import { getYoutubeThumbnailUrl, isYoutubeClassicThumbnailUrl } from "./youtube";
 import { pickBetterTitle, resolvePetalTitle } from "@/lib/title/resolve";
+import {
+  normalizeFacebookPostUrl,
+  pickFacebookPostUrl,
+} from "@/lib/url/facebook";
 import { normalizeXStatusUrl, pickXPostUrl } from "@/lib/url/x";
 
-function improvedXUrl(currentUrl: string, ogUrl?: string): string | undefined {
-  if (normalizeXStatusUrl(currentUrl)) return undefined;
-  const resolved = pickXPostUrl(ogUrl, currentUrl);
-  return resolved && resolved !== currentUrl ? resolved : undefined;
+function improvedSocialUrl(
+  platform: Platform | undefined,
+  currentUrl: string,
+  ogUrl?: string
+): string | undefined {
+  if (platform === "x") {
+    if (normalizeXStatusUrl(currentUrl)) return undefined;
+    const resolved = pickXPostUrl(ogUrl, currentUrl);
+    return resolved && resolved !== currentUrl ? resolved : undefined;
+  }
+
+  if (platform === "facebook") {
+    if (normalizeFacebookPostUrl(currentUrl)) return undefined;
+    const resolved = pickFacebookPostUrl(ogUrl, currentUrl);
+    return resolved && resolved !== currentUrl ? resolved : undefined;
+  }
+
+  return undefined;
 }
 
-function withXUrl(
+function withSocialUrl(
   result: PreviewResult,
   job: PreviewJob,
   ogUrl?: string
 ): PreviewResult {
-  const url = job.platform === "x" ? improvedXUrl(job.url, ogUrl) : undefined;
+  const url = improvedSocialUrl(job.platform, job.url, ogUrl);
   return url ? { ...result, url } : result;
 }
 
@@ -72,7 +90,7 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
       ogDescription,
       finalizeTitle
     );
-    if (youtubeResult) return withXUrl(youtubeResult, job, og.data?.url);
+    if (youtubeResult) return withSocialUrl(youtubeResult, job, og.data?.url);
   }
 
   const preserveExtensionPreview =
@@ -83,7 +101,7 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
       : true);
 
   if (preserveExtensionPreview && job.existingPreviewUrl) {
-    return withXUrl(
+    return withSocialUrl(
       {
         status: "completed",
         preview_url: job.existingPreviewUrl,
@@ -104,7 +122,7 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
       screenshot.buffer
     );
 
-    return withXUrl(
+    return withSocialUrl(
       {
         status: "completed",
         preview_url: previewUrl,
@@ -129,7 +147,7 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
   const previewImage = ytThumb ?? (og.success ? og.data?.image : undefined);
 
   if (previewImage) {
-    return withXUrl(
+    return withSocialUrl(
       {
         status: "completed",
         preview_url: previewImage,
@@ -147,7 +165,7 @@ export async function generatePreview(job: PreviewJob): Promise<PreviewResult> {
     title: await finalizeTitle(screenshot.title),
   };
 
-  return withXUrl(
+  return withSocialUrl(
     await generateAndStoreFallbackCard(enrichedJob, {
       description: ogDescription,
     }),

@@ -6,7 +6,7 @@ import { design, getThemeStyle } from "@/lib/design-tokens";
 import { getPlatformConfig, resolvePetalPlatform } from "@/lib/platforms";
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 import { petalDisplayTitle } from "@/lib/export-ui/adapters";
-import { resolvePetalOpenUrl } from "@/lib/url/x";
+import { resolvePetalOpenUrl } from "@/lib/url/petal-url";
 import { cn, formatPetalTime } from "@/lib/utils";
 import { NoteIcon } from "@/components/ui/design-icons";
 import type { Petal } from "@/lib/types";

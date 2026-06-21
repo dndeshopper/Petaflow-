@@ -6,6 +6,7 @@ import {
 import type { PreviewResult } from "./types";
 import type { Platform, PreviewStatus } from "@/lib/types";
 import { pickBetterTitle, resolvePetalTitle, isWeakTitle } from "@/lib/title/resolve";
+import { isFacebookPostUrl, normalizeFacebookPostUrl } from "@/lib/url/facebook";
 import { isXStatusUrl, normalizeXStatusUrl } from "@/lib/url/x";
 
 export async function getPetalPreviewState(
@@ -97,10 +98,18 @@ export async function savePreviewResult(
     petalUpdate.title = resolvedTitle;
   }
 
-  if (result.url && existing?.platform === "x") {
-    const next = normalizeXStatusUrl(result.url) ?? result.url;
-    if (isXStatusUrl(next) && !isXStatusUrl(existing.url)) {
-      petalUpdate.url = next;
+  if (result.url && existing) {
+    const platform = existing.platform as Platform;
+    if (platform === "x") {
+      const next = normalizeXStatusUrl(result.url) ?? result.url;
+      if (isXStatusUrl(next) && !isXStatusUrl(existing.url)) {
+        petalUpdate.url = next;
+      }
+    } else if (platform === "facebook") {
+      const next = normalizeFacebookPostUrl(result.url) ?? result.url;
+      if (isFacebookPostUrl(next) && !isFacebookPostUrl(existing.url)) {
+        petalUpdate.url = next;
+      }
     }
   }
 

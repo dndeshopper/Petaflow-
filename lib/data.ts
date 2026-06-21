@@ -25,8 +25,8 @@ import { detectPlatform, resolvePetalPlatform } from "@/lib/platforms";
 import { scheduleWeakTitleBackfill } from "@/lib/title/backfill";
 import { scheduleYoutubePreviewBackfill } from "@/lib/preview/youtube-backfill";
 import { scheduleXPreviewBackfill } from "@/lib/preview/x-backfill";
-import { scheduleXUrlBackfill } from "@/lib/preview/x-url-backfill";
-import { normalizeXStatusUrl } from "@/lib/url/x";
+import { scheduleSocialUrlBackfill } from "@/lib/preview/social-url-backfill";
+import { normalizePetalSaveUrl } from "@/lib/url/petal-url";
 import { cleanTitle, isWeakTitle, resolvePetalTitle } from "@/lib/title/resolve";
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
 
@@ -94,7 +94,7 @@ export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
     scheduleWeakTitleBackfill(petals);
     scheduleYoutubePreviewBackfill(petals);
     scheduleXPreviewBackfill(petals);
-    scheduleXUrlBackfill(petals);
+    scheduleSocialUrlBackfill(petals);
     return petals;
   }
 
@@ -137,7 +137,7 @@ export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
   scheduleWeakTitleBackfill(petals);
   scheduleYoutubePreviewBackfill(petals);
   scheduleXPreviewBackfill(petals);
-  scheduleXUrlBackfill(petals);
+  scheduleSocialUrlBackfill(petals);
 
   return petals;
 }
@@ -147,8 +147,7 @@ export async function createPetal(
   ctx?: DataContext
 ): Promise<Petal> {
   const platform = input.platform ?? detectPlatform(input.url);
-  const url =
-    platform === "x" ? (normalizeXStatusUrl(input.url) ?? input.url) : input.url;
+  const url = normalizePetalSaveUrl(input.url, platform);
   const youtubeThumb =
     platform === "youtube" ? getYoutubeThumbnailUrl(url) : null;
 

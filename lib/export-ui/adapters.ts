@@ -11,7 +11,7 @@ import { getPlatformConfig, resolvePetalPlatform } from "@/lib/platforms";
 import { getTimeGreeting } from "@/lib/utils";
 
 import { getYoutubeThumbnailUrl } from "@/lib/preview/youtube";
-import { resolvePetalOpenUrl } from "@/lib/url/x";
+import { resolvePetalOpenUrl } from "@/lib/url/petal-url";
 
 const YT = "linear-gradient(135deg,#2a2540,#4a3d6b)";
 const IG = "linear-gradient(135deg,#f9ce5b,#ee583f 45%,#d92e8c 75%,#9b3bc4)";
