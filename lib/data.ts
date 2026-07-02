@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import {
   DEMO_USER,
@@ -35,7 +36,36 @@ export interface DataContext {
   apiKey?: string | null;
 }
 
-export async function getSupabaseClients(ctx?: DataContext) {
+/**
+ * Best-effort data cleanup (weak titles, missing previews, social URLs) runs as
+ * a side effect of reading petals. Without a guard it would re-run on every
+ * navigation. We throttle per user so each set of backfills fires at most once
+ * per interval on a warm server instance; anything not covered is picked up on
+ * the next request after the window rolls over.
+ */
+const BACKFILL_INTERVAL_MS = 5 * 60 * 1000;
+const lastBackfillByUser = new Map<string, number>();
+
+function runBackfills(userKey: string, petals: Petal[]): void {
+  const now = Date.now();
+  const last = lastBackfillByUser.get(userKey) ?? 0;
+  if (now - last < BACKFILL_INTERVAL_MS) return;
+  lastBackfillByUser.set(userKey, now);
+
+  scheduleWeakTitleBackfill(petals);
+  scheduleYoutubePreviewBackfill(petals);
+  scheduleXPreviewBackfill(petals);
+  scheduleSocialUrlBackfill(petals);
+}
+
+/**
+ * All read helpers below are wrapped in React `cache()` so they are
+ * deduplicated within a single server render/request. The dashboard layout and
+ * page both request the same data (petals, user, stats), so without this the
+ * full petal table was fetched up to 3× per navigation — each fetch also
+ * scheduling background backfills. With `cache()` the work runs once per request.
+ */
+export const getSupabaseClients = cache(async (ctx?: DataContext) => {
   const { createClient, createServiceClient } = await import(
     "@/lib/supabase/server"
   );
@@ -52,95 +82,94 @@ export async function getSupabaseClients(ctx?: DataContext) {
   }
 
   return { supabase, userId, sessionUser: user };
-}
+});
 
-export async function getCurrentUser(ctx?: DataContext): Promise<UserProfile> {
-  if (!isSupabaseConfigured()) return DEMO_USER;
+export const getCurrentUser = cache(
+  async (ctx?: DataContext): Promise<UserProfile> => {
+    if (!isSupabaseConfigured()) return DEMO_USER;
 
-  const { supabase, userId, sessionUser } = await getSupabaseClients(ctx);
-  const activeId = sessionUser?.id ?? userId;
+    const { supabase, userId, sessionUser } = await getSupabaseClients(ctx);
+    const activeId = sessionUser?.id ?? userId;
 
-  if (!activeId) return DEMO_USER;
+    if (!activeId) return DEMO_USER;
 
-  const { data } = await supabase
-    .from("users")
-    .select("*")
-    .eq("id", activeId)
-    .single();
+    const { data } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", activeId)
+      .single();
 
-  if (data) return data;
+    if (data) return data;
 
-  if (sessionUser) {
-    const metaName =
-      typeof sessionUser.user_metadata?.full_name === "string"
-        ? sessionUser.user_metadata.full_name
-        : "";
-    return {
-      id: sessionUser.id,
-      email: sessionUser.email ?? "",
-      full_name: metaName || sessionUser.email?.split("@")[0] || "User",
-      avatar_url: null,
-      is_pro: false,
-      created_at: sessionUser.created_at,
-    };
+    if (sessionUser) {
+      const metaName =
+        typeof sessionUser.user_metadata?.full_name === "string"
+          ? sessionUser.user_metadata.full_name
+          : "";
+      return {
+        id: sessionUser.id,
+        email: sessionUser.email ?? "",
+        full_name: metaName || sessionUser.email?.split("@")[0] || "User",
+        avatar_url: null,
+        is_pro: false,
+        created_at: sessionUser.created_at,
+      };
+    }
+
+    return getFallbackUserProfile(activeId);
   }
+);
 
-  return getFallbackUserProfile(activeId);
-}
+export const getPetals = cache(
+  async (ctx?: DataContext): Promise<Petal[]> => {
+    if (!isSupabaseConfigured()) {
+      const petals = getDemoPetals();
+      runBackfills("demo", petals);
+      return petals;
+    }
 
-export async function getPetals(ctx?: DataContext): Promise<Petal[]> {
-  if (!isSupabaseConfigured()) {
-    const petals = getDemoPetals();
-    scheduleWeakTitleBackfill(petals);
-    scheduleYoutubePreviewBackfill(petals);
-    scheduleXPreviewBackfill(petals);
-    scheduleSocialUrlBackfill(petals);
+    const { supabase, userId } = await getSupabaseClients(ctx);
+    if (!userId) return getDemoPetals();
+
+    const { data, error } = await supabase
+      .from("petals")
+      .select(
+        "id, user_id, url, title, platform, note, created_at, viewed, status, preview_url, theme, preview_status, description"
+      )
+      .eq("user_id", userId)
+      .neq("status", "archived")
+      .order("created_at", { ascending: false });
+
+    if (error) throw new Error(error.message);
+
+    const petals = (data ?? []).map((petal) => {
+      const platform = resolvePetalPlatform(petal);
+      return platform === petal.platform ? petal : { ...petal, platform };
+    });
+
+    const fixes = petals.filter(
+      (petal, index) =>
+        petal.platform !== (data?.[index]?.platform ?? petal.platform)
+    );
+
+    if (fixes.length > 0) {
+      void Promise.all(
+        fixes.map((petal) =>
+          supabase
+            .from("petals")
+            .update({ platform: petal.platform })
+            .eq("id", petal.id)
+        )
+      ).catch((err) => {
+        console.warn("[getPetals] Platform backfill failed:", err);
+      });
+    }
+
+    runBackfills(userId, petals);
+
     return petals;
   }
-
-  const { supabase, userId } = await getSupabaseClients(ctx);
-  if (!userId) return getDemoPetals();
-
-  const { data, error } = await supabase
-    .from("petals")
-    .select(
-      "id, user_id, url, title, platform, note, created_at, viewed, status, preview_url, theme, preview_status, description"
-    )
-    .eq("user_id", userId)
-    .neq("status", "archived")
-    .order("created_at", { ascending: false });
-
-  if (error) throw new Error(error.message);
-
-  const petals = (data ?? []).map((petal) => {
-    const platform = resolvePetalPlatform(petal);
-    return platform === petal.platform ? petal : { ...petal, platform };
-  });
-
-  const fixes = petals.filter(
-    (petal, index) => petal.platform !== (data?.[index]?.platform ?? petal.platform)
-  );
-
-  if (fixes.length > 0) {
-    void Promise.all(
-      fixes.map((petal) =>
-        supabase
-          .from("petals")
-          .update({ platform: petal.platform })
-          .eq("id", petal.id)
-      )
-    ).catch((err) => {
-      console.warn("[getPetals] Platform backfill failed:", err);
-    });
-  }
-
-  scheduleWeakTitleBackfill(petals);
-  scheduleYoutubePreviewBackfill(petals);
-  scheduleXPreviewBackfill(petals);
-  scheduleSocialUrlBackfill(petals);
-
-  return petals;
-}
+);
 
 export async function createPetal(
   input: CreatePetalInput,
@@ -238,10 +267,52 @@ export async function searchPetals(
   return response.petals;
 }
 
-export async function getTodayStats(): Promise<TodayStats> {
+export const getCollections = cache(
+  async (ctx?: DataContext): Promise<Collection[]> => {
+    if (!isSupabaseConfigured()) return DEMO_COLLECTIONS;
+
+    const { supabase, userId } = await getSupabaseClients(ctx);
+    if (!userId) return DEMO_COLLECTIONS;
+
+    const { data } = await supabase
+      .from("collections")
+      .select("*, collection_petals(count)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    return (data ?? []).map((c) => ({
+      ...c,
+      petal_count: c.collection_petals?.[0]?.count ?? 0,
+    }));
+  }
+);
+
+export const getGardenTopics = cache(
+  async (ctx?: DataContext): Promise<GardenTopic[]> => {
+    if (!isSupabaseConfigured()) return DEMO_GARDEN_TOPICS;
+
+    const { supabase, userId } = await getSupabaseClients(ctx);
+    if (!userId) return DEMO_GARDEN_TOPICS;
+
+    const { data } = await supabase
+      .from("garden_topics")
+      .select("*")
+      .eq("user_id", userId)
+      .order("petal_count", { ascending: false });
+
+    return data ?? [];
+  }
+);
+
+export const getTodayStats = cache(async (): Promise<TodayStats> => {
   if (!isSupabaseConfigured()) return getDemoTodayStats();
 
-  const petals = await getPetals();
+  // Reuses the cached getPetals()/getCollections() results for this request.
+  const [petals, collections] = await Promise.all([
+    getPetals(),
+    getCollections(),
+  ]);
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayPetals = petals.filter((p) => new Date(p.created_at) >= today);
@@ -250,8 +321,6 @@ export async function getTodayStats(): Promise<TodayStats> {
   petals.forEach((p) => {
     if (p.theme) themeCounts[p.theme] = (themeCounts[p.theme] ?? 0) + 1;
   });
-
-  const collections = await getCollections();
 
   return {
     petals_saved: todayPetals.length,
@@ -262,44 +331,11 @@ export async function getTodayStats(): Promise<TodayStats> {
       .slice(0, 4),
     recent_collections: collections.slice(0, 3),
   };
-}
+});
 
 export async function getInboxPetals(ctx?: DataContext): Promise<Petal[]> {
   const { getInboxPetals: loadInbox } = await import("@/lib/inbox/server");
   return loadInbox(ctx);
-}
-
-export async function getCollections(ctx?: DataContext): Promise<Collection[]> {
-  if (!isSupabaseConfigured()) return DEMO_COLLECTIONS;
-
-  const { supabase, userId } = await getSupabaseClients(ctx);
-  if (!userId) return DEMO_COLLECTIONS;
-
-  const { data } = await supabase
-    .from("collections")
-    .select("*, collection_petals(count)")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-
-  return (data ?? []).map((c) => ({
-    ...c,
-    petal_count: c.collection_petals?.[0]?.count ?? 0,
-  }));
-}
-
-export async function getGardenTopics(ctx?: DataContext): Promise<GardenTopic[]> {
-  if (!isSupabaseConfigured()) return DEMO_GARDEN_TOPICS;
-
-  const { supabase, userId } = await getSupabaseClients(ctx);
-  if (!userId) return DEMO_GARDEN_TOPICS;
-
-  const { data } = await supabase
-    .from("garden_topics")
-    .select("*")
-    .eq("user_id", userId)
-    .order("petal_count", { ascending: false });
-
-  return data ?? [];
 }
 
 export async function getCollectionWithPetals(
